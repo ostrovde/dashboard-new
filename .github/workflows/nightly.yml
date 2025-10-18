@@ -1,0 +1,35 @@
+name: Nightly Build & Deploy
+
+on:
+  schedule:
+    - cron: '0 0 * * *'   # каждые сутки в 03:00 МСК (UTC+3)
+  workflow_dispatch:
+
+jobs:
+  nightly:
+    runs-on: ubuntu-latest
+    env:
+      SYNC_TOKEN: ${{ secrets.SYNC_TOKEN }}
+      SYNC_URL:   ${{ secrets.SYNC_URL }}
+      TG_BOT:     ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TG_CHAT:    ${{ secrets.TELEGRAM_CHAT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Call FastAPI /sync
+        run: |
+          echo "🚀 Nightly deploy start..."
+          curl -fsSL -X POST "$SYNC_URL" \
+            -H "Authorization: Bearer $SYNC_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"reason":"nightly cron"}'
+
+      - name: Telegram notify
+        if: ${{ always() }}
+        run: |
+          STATUS="${{ job.status }}"
+          TEXT="🌙 Nightly build finished with status: ${STATUS}\nRepo: $GITHUB_REPOSITORY"
+          curl -fsSL -X POST "https://api.telegram.org/bot${TG_BOT}/sendMessage" \
+            -H "Content-Type: application/json" \
+            -d "{\"chat_id\":\"${TG_CHAT}\",\"text\":\"${TEXT}\"}"
