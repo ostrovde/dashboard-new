@@ -1,22 +1,58 @@
-name: 🚀 Deploy RayAgro Dashboard
+name: 🚀 RayAgro Auto Deploy
+
 on:
   push:
     branches:
       - main
 
+env:
+  SYNC_URL: http://95.***.***.***:8081/sync   # сюда вставь внешний IP сервера
+  DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+  TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+  TELEGRAM_CHAT_ID: "1396090830"
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: 🧩 Checkout repository
         uses: actions/checkout@v4
 
-      - name: Trigger remote sync
-        env:
-          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+      - name: ⚙️ Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔍 Lint and Build
         run: |
-          echo "🔁 Sending sync request to server..."
-          curl -X POST http://5.35.87.126:8081/sync \
-               -H "Authorization: Bearer $DEPLOY_TOKEN" \
-               -H "Content-Type: application/json" \
-               -d '{"repo":"dashboard-new","branch":"main"}'
+          npm run lint || echo "⚠️ Lint warnings, continuing..."
+          npm run build
+
+      - name: 🚀 Trigger FastAPI Deploy
+        id: sync
+        run: |
+          echo "Triggering FastAPI sync..."
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$SYNC_URL" -H "Authorization: Bearer $DEPLOY_TOKEN")
+          if [ "$RESPONSE" = "200" ]; then
+            echo "✅ Deploy success"
+            echo "RESULT=success" >> $GITHUB_ENV
+          else
+            echo "❌ Deploy failed, HTTP $RESPONSE"
+            echo "RESULT=failure" >> $GITHUB_ENV
+          fi
+
+      - name: 💬 Telegram Notification
+        if: always()
+        run: |
+          if [ "${{ env.RESULT }}" = "success" ]; then
+            MSG="✅ *RayAgro Dashboard Updated*\nRepository: *${{ github.repository }}*\nBranch: *${{ github.ref_name }}*\nCommit: *${{ github.sha }}*"
+          else
+            MSG="❌ *RayAgro Deploy Failed!*\nRepository: *${{ github.repository }}*\nBranch: *${{ github.ref_name }}*\nCommit: *${{ github.sha }}*"
+          fi
+
+          curl -s -X POST https://api.telegram.org/bot${{ env.TELEGRAM_TOKEN }}/sendMessage \
+            -H "Content-Type: application/json" \
+            -d "{\"chat_id\": \"${{ env.TELEGRAM_CHAT_ID }}\", \"text\": \"$MSG\", \"parse_mode\": \"Markdown\"}"
