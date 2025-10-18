@@ -24,3 +24,16 @@ jobs:
           git add .
           git commit -m "auto-sync from dashboard-new" || echo "No changes to commit"
           git push https://${SYNC_TOKEN}@github.com/ostrovde/rayagro-yield-dashboard-old.git main
+
+      - name: Notify Telegram
+        if: success()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          MSG="✅ Репозиторий *dashboard-new* синхронизирован с *rayagro-yield-dashboard-old*%0A🕒 $(date '+%Y-%m-%d %H:%M:%S')%0A🧩 Commit: ${COMMIT_MSG}"
+          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            -d text="${MSG}" \
+            -d parse_mode="Markdown"
