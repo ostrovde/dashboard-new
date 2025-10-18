@@ -1,0 +1,22 @@
+name: 🚀 Deploy RayAgro Dashboard
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Trigger remote sync
+        env:
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: |
+          echo "🔁 Sending sync request to server..."
+          curl -X POST http://5.35.87.126:8081/sync \
+               -H "Authorization: Bearer $DEPLOY_TOKEN" \
+               -H "Content-Type: application/json" \
+               -d '{"repo":"dashboard-new","branch":"main"}'
