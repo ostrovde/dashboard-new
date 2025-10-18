@@ -1,0 +1,26 @@
+name: Sync to Old Dashboard
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Mirror changes to old dashboard
+        env:
+          SYNC_TOKEN: ${{ secrets.SYNC_TOKEN }}
+        run: |
+          git config --global user.name "MCP Bot"
+          git config --global user.email "mcp-bot@rayagro.local"
+          git clone https://github.com/ostrovde/rayagro-yield-dashboard-old.git oldrepo
+          rsync -av --delete --exclude '.git' --exclude 'node_modules' ./ oldrepo/
+          cd oldrepo
+          git add .
+          git commit -m "auto-sync from dashboard-new" || echo "No changes to commit"
+          git push https://${SYNC_TOKEN}@github.com/ostrovde/rayagro-yield-dashboard-old.git main
