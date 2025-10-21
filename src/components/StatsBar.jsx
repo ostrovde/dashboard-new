@@ -14,23 +14,32 @@ export default function MetricsBar({ rows = [] }) {
   }, [rows]);
 
   const card = (title, value) => (
-    <div style={{
-      background: "linear-gradient(180deg,#6a85ff,#7ed6ff)",
-      borderRadius: "16px", padding: "10px 12px", color: "#fff",
-      fontWeight: 600, boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-      textAlign: "center"
-    }}>
-      {title}<br /><span style={{ fontSize: 20 }}>{value}</span>
+    <div
+      style={{
+        background: "linear-gradient(180deg,#6a85ff,#7ed6ff)",
+        borderRadius: "16px",
+        padding: "10px 12px",
+        color: "#fff",
+        fontWeight: 600,
+        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+        textAlign: "center"
+      }}
+    >
+      {title}
+      <br />
+      <span style={{ fontSize: 20 }}>{value}</span>
     </div>
   );
 
   return (
-    <div style={{
-      display: "grid",
-      gridTemplateColumns: "repeat(6,1fr)",
-      gap: "12px",
-      margin: "16px 20px"
-    }}>
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(6,1fr)",
+        gap: "12px",
+        margin: "16px 20px"
+      }}
+    >
       {card("Записей", m.total)}
       {card("Регионов", m.regions)}
       {card("Гибридов", m.hybrids)}
