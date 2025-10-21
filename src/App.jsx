@@ -1,35 +1,27 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+// APPLE_DASHBOARD_UI
+import React,{useEffect,useState}from'react';
+import'./style/theme.css';
+import MetricsBar from'./components/StatsBar';
+import MapPanel from'./components/MapPanel';
+import HeatmapPanel from'./components/HeatmapPanel';
+import AnalyticsPanel from'./components/analytics/AnalyticsPanel';
+import DataTable from'./components/table/DataTable';
+export default function App(){
+const[rows,setRows]=useState([]);
+useEffect(()=>{
+fetch('/data/yield.csv').then(r=>r.text()).then(t=>{
+const [h,...l]=t.trim().split(/\r?\n/);
+const c=h.split(',');
+setRows(l.map(x=>{
+const v=x.split(',');const o={};
+c.forEach((k,i)=>o[k]=v[i]);o.Yield=+o.Yield;o.Lat=+o.Lat;o.Lng=+o.Lng;return o;
+}));
+});
+},[]);
+return(<div><div className="card"><h1>РАЙАГРО ДАШБОРД</h1></div>
+<MetricsBar rows={rows}/>
+<div className="card"><MapPanel rows={rows}/></div>
+<div className="card"><HeatmapPanel rows={rows}/></div>
+<div className="card"><AnalyticsPanel rows={rows}/></div>
+<div className="card"><DataTable rows={rows}/></div></div>);
 }
-
-export default App
