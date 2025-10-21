@@ -17,7 +17,8 @@ export default function MetricsBar({ rows = [] }) {
     <div style={{
       background: "linear-gradient(180deg,#6a85ff,#7ed6ff)",
       borderRadius: "16px", padding: "10px 12px", color: "#fff",
-      fontWeight: 600, boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
+      fontWeight: 600, boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+      textAlign: "center"
     }}>
       {title}<br /><span style={{ fontSize: 20 }}>{value}</span>
     </div>
