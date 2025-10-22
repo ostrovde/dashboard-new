@@ -60,10 +60,10 @@ SAFE_TASKS = {
     "build": ["bash","-lc","npm ci || true; npm run build"],
     "diag":  ["bash","-lc","python3 diagnostics.py --json || true"],
     "test":  ["bash","-lc","npm test --if-present -- --ci --reporters=default || true"],
+    "smoke": ["bash","-lc","chmod +x scripts/smoke.sh && scripts/smoke.sh || true"],
 }
 
 def collect_donesheet():
-    # факты с машины
     dist_ok = Path(REPO_DIR, "dist", "index.html").exists()
     logs = sorted(glob.glob(os.path.join(REPO_DIR, "logs", "diagnostics-*.json")))
     last_log = logs[-1] if logs else ""
@@ -71,7 +71,6 @@ def collect_donesheet():
     last_commit = out.strip() if c==0 else ""
     c2, out2, _ = run(["git","status","--porcelain"])
     clean = (out2.strip() == "")
-    # чек-лист
     lines = []
     lines.append("### Definition of Done (auto)")
     lines.append(f"- [{'x' if dist_ok else ' '}] Build OK (dist/index.html present)")
@@ -168,7 +167,6 @@ class H(BaseHTTPRequestHandler):
             return json_reply(self, {"ok": True, "task": task, "code": c, "stdout_tail": o[-1200:], "stderr_tail": e[-1200:]})
 
         if parsed.path == "/donesheet":
-            # собрать DoD и записать в тело PR
             sheet = collect_donesheet()
             res = gh_pr_update_body(sheet)
             return json_reply(self, {"ok": res.get("ok", False), **res}, 200)
