@@ -5,9 +5,8 @@ import "leaflet/dist/leaflet.css";
 
 /**
  * Лево: карта Leaflet с точками из public/data/geo.csv.
- * Право: тепловая сетка 10x20 по bbox точек; значение ячейки — средняя урожайность
- *        по точкам, попавшим в ячейку (join по Контрагент+Год из kpi.csv).
- * Размер контейнеров фиксирован, UI не падает при отсутствии данных.
+ * Право: тепловая сетка по bbox и таблица метрик из public/data/kpi_stats.csv.
+ * Размеры фиксированы, UI не падает без данных.
  */
 
 function Legend({ edges }) {
@@ -55,12 +54,53 @@ const toNum = (v) => {
   return Number.isFinite(n) ? n : NaN;
 };
 
+function StatsTable({ rows }) {
+  if (!rows || !rows.length) return null;
+  const sorted = [...rows].sort((a,b) => {
+    const aw = toNum(a["WAASB_proxy"]) || 0, bw = toNum(b["WAASB_proxy"]) || 0;
+    if (bw !== aw) return bw - aw;
+    const acv = toNum(a["CV_%"]) || 0, bcv = toNum(b["CV_%"]) || 0;
+    return acv - bcv;
+  });
+
+  return (
+    <div style={{ marginTop: 12 }}>
+      <div style={{ fontSize: 13, color: "#666", marginBottom: 6 }}>Метрики по контрагентам</div>
+      <div style={{ maxHeight: 180, overflow: "auto", border: "1px solid #eee", borderRadius: 8 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+          <thead>
+            <tr style={{ background: "#fafafa" }}>
+              <th style={{ textAlign: "left", padding: "6px 8px", borderBottom: "1px solid #eee" }}>Контрагент</th>
+              <th style={{ textAlign: "right", padding: "6px 8px", borderBottom: "1px solid #eee" }}>Mean (ц/га)</th>
+              <th style={{ textAlign: "right", padding: "6px 8px", borderBottom: "1px solid #eee" }}>SD (ц/га)</th>
+              <th style={{ textAlign: "right", padding: "6px 8px", borderBottom: "1px solid #eee" }}>CV (%)</th>
+              <th style={{ textAlign: "right", padding: "6px 8px", borderBottom: "1px solid #eee" }}>WAASB proxy</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((r, i) => (
+              <tr key={i} style={{ borderBottom: "1px solid #f2f2f2" }}>
+                <td style={{ padding: "6px 8px" }}>{r["Контрагент"]}</td>
+                <td style={{ padding: "6px 8px", textAlign: "right" }}>{r["Mean_ц_га"]}</td>
+                <td style={{ padding: "6px 8px", textAlign: "right" }}>{r["SD_ц_га"]}</td>
+                <td style={{ padding: "6px 8px", textAlign: "right" }}>{r["CV_%"]}</td>
+                <td style={{ padding: "6px 8px", textAlign: "right" }}>{r["WAASB_proxy"]}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export default function MapView() {
   const [geoRows, setGeoRows] = useState(null);
   const [kpiRows, setKpiRows] = useState(null);
+  const [statsRows, setStatsRows] = useState(null);
   const [error, setError] = useState("");
 
-  // Leaflet
+  // единственные ссылки Leaflet (без дублирования)
   const mapEl = useRef(null);
   const mapRef = useRef(null);
 
@@ -69,17 +109,19 @@ export default function MapView() {
     let alive = true;
     async function load() {
       try {
-        const [geoText, kpiText] = await Promise.all([
+        const [geoText, kpiText, statsText] = await Promise.all([
           fetch("/data/geo.csv").then(r => r.ok ? r.text() : ""),
-          fetch("/data/kpi.csv").then(r => r.ok ? r.text() : "")
+          fetch("/data/kpi.csv").then(r => r.ok ? r.text() : ""),
+          fetch("/data/kpi_stats.csv").then(r => r.ok ? r.text() : "")
         ]);
         if (!alive) return;
         setGeoRows(geoText ? parseCSV(geoText).rows : []);
         setKpiRows(kpiText ? parseCSV(kpiText).rows : []);
+        setStatsRows(statsText ? parseCSV(statsText).rows : []);
       } catch (e) {
         if (!alive) return;
         setError(String(e));
-        setGeoRows([]); setKpiRows([]);
+        setGeoRows([]); setKpiRows([]); setStatsRows([]);
       }
     }
     load();
@@ -89,7 +131,7 @@ export default function MapView() {
   const hasPoints = Array.isArray(geoRows) && geoRows.length > 0;
   const hasYield  = Array.isArray(kpiRows) && kpiRows.length > 0;
 
-  // join geo×kpi по ключу (Контрагент, Год) -> массив точек с yield
+  // join geo×kpi
   const joined = useMemo(() => {
     if (!hasPoints || !hasYield) return [];
     const kpiMap = new Map();
@@ -115,7 +157,7 @@ export default function MapView() {
     return pts;
   }, [geoRows, kpiRows, hasPoints, hasYield]);
 
-  // bbox точек
+  // bbox
   const bbox = useMemo(() => {
     if (!joined.length) return null;
     let minLat=+90, maxLat=-90, minLon=+180, maxLon=-180;
@@ -128,7 +170,7 @@ export default function MapView() {
     return { minLat, maxLat, minLon, maxLon };
   }, [joined]);
 
-  // агрегируем в сетку rows×cols по bbox
+  // агрегирование в сетку
   const rowsN = 10, colsN = 20;
   const gridAgg = useMemo(() => {
     if (!bbox || !joined.length) return { edges: null, grid: null, means: [] };
@@ -136,11 +178,10 @@ export default function MapView() {
     const latSpan = Math.max(1e-9, maxLat - minLat);
     const lonSpan = Math.max(1e-9, maxLon - minLon);
 
-    // копилки суммы/кол-ва
     const sum = Array.from({ length: rowsN }, () => Array(colsN).fill(0));
     const cnt = Array.from({ length: rowsN }, () => Array(colsN).fill(0));
     for (const p of joined) {
-      const ry = Math.floor((1 - (p.lat - minLat) / latSpan) * rowsN); // север сверху
+      const ry = Math.floor((1 - (p.lat - minLat) / latSpan) * rowsN);
       const cx = Math.floor(((p.lon - minLon) / lonSpan) * colsN);
       const r = Math.min(rowsN - 1, Math.max(0, ry));
       const c = Math.min(colsN - 1, Math.max(0, cx));
@@ -155,7 +196,7 @@ export default function MapView() {
     return { edges, grid: mean, means: vals };
   }, [bbox, joined]);
 
-  // Leaflet точки
+  // Leaflet точки (один useEffect)
   useEffect(() => {
     let L;
     let group;
@@ -176,7 +217,7 @@ export default function MapView() {
       }
       if (group) group.remove();
 
-      if (mapRef.current && joined.length) {
+      if (mapRef.current) {
         group = L.featureGroup();
         for (const p of joined) {
           const m = L.circleMarker([p.lat, p.lon], { radius: 5, weight: 1 });
@@ -200,36 +241,27 @@ export default function MapView() {
       minHeight: 360,
       padding: 16
     }}>
-      {/* ЛЕВО: карта с точками */}
+      {/* ЛЕВО: карта */}
       <section style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 16, background: "#fff" }}>
         <h3 style={{ margin: 0, marginBottom: 8 }}>Точки (бренд/гибрид)</h3>
-
         {geoRows === null ? <div style={{ color: "#666" }}>Загрузка…</div> : null}
         {geoRows && !hasPoints ? (
-          <div style={{ color: "#666" }}>Нет данных: появятся при наличии <code>public/data/geo.csv</code>.</div>
+          <div style={{ color: "#666" }}>Нет данных — добавьте <code>public/data/geo.csv</code>.</div>
         ) : null}
-
         <div
           ref={mapEl}
-          style={{
-            height: 280,
-            border: "1px solid #e5e7eb",
-            borderRadius: 12,
-            overflow: "hidden",
-            marginTop: 8
-          }}
+          style={{ height: 280, border: "1px solid #e5e7eb", borderRadius: 12, overflow: "hidden", marginTop: 8 }}
         />
       </section>
 
-      {/* ПРАВО: тепловая сетка bbox */}
+      {/* ПРАВО: тепловая сетка + таблица метрик */}
       <section style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 16, background: "#fff" }}>
         <h3 style={{ margin: 0, marginBottom: 8 }}>Градиент по урожайности (bbox-сетка)</h3>
 
-        {kpiRows === null ? <div style={{ color: "#666" }}>Загрузка…</div> : null}
         {(!gridAgg.grid || !gridAgg.means.length) ? (
           <div style={{ color: "#666" }}>
-            Нет данных для построения сетки. Нужны <code>public/data/geo.csv</code> и <code>public/data/kpi.csv</code> с пересекающимися
-            ключами <em>(Контрагент+Год)</em>.
+            Нет данных для сетки. Нужны <code>public/data/geo.csv</code> и <code>public/data/kpi.csv</code> с совпадающими
+            ключами <em>Контрагент+Год</em>.
           </div>
         ) : (
           <>
@@ -246,14 +278,9 @@ export default function MapView() {
                 background: "#fff"
               }}
             >
-              <div style={{
-                display: "grid",
-                gridTemplateRows: `repeat(${rowsN}, 1fr)`,
-                gap: 2,
-                height: "100%"
-              }}>
+              <div style={{ display: "grid", gridTemplateRows: `repeat(${10}, 1fr)`, gap: 2, height: "100%" }}>
                 {gridAgg.grid.map((row, ri) => (
-                  <div key={ri} style={{ display: "grid", gridTemplateColumns: `repeat(${colsN}, 1fr)`, gap: 2 }}>
+                  <div key={ri} style={{ display: "grid", gridTemplateColumns: `repeat(${20}, 1fr)`, gap: 2 }}>
                     {row.map((v, ci) => {
                       if (!Number.isFinite(v)) {
                         return <div key={ci} style={{ height: "100%", background: "#eee", borderRadius: 2 }} title="нет данных" />;
@@ -261,11 +288,8 @@ export default function MapView() {
                       const bi = binIndex(v, gridAgg.edges);
                       const t = (gridAgg.edges.length - 2) === 0 ? 1 : bi / (gridAgg.edges.length - 2);
                       return (
-                        <div
-                          key={ci}
-                          title={`${v.toFixed(1)} ц/га`}
-                          style={{ height: "100%", background: redYellowGreen(t), borderRadius: 2 }}
-                        />
+                        <div key={ci} title={`${v.toFixed(1)} ц/га`}
+                          style={{ height: "100%", background: redYellowGreen(t), borderRadius: 2 }} />
                       );
                     })}
                   </div>
@@ -275,6 +299,9 @@ export default function MapView() {
             <Legend edges={gridAgg.edges} />
           </>
         )}
+
+        {/* Таблица метрик ниже — не зависит от наличия сетки */}
+        <StatsTable rows={statsRows || []} />
       </section>
 
       {error && (
