@@ -16,14 +16,19 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '20' }
 
+      - name: Versions
+        run: node -v && npm -v && python3 --version
+
       - name: Install
         run: npm ci
 
       - name: Lint (soft)
-        run: npm run lint || echo "::warning :: lint skipped/failed"
+        run: npm run lint
+        continue-on-error: true
 
       - name: Test (soft)
-        run: npm run test -- --ci || echo "::warning :: tests skipped/failed"
+        run: npm run test -- --ci
+        continue-on-error: true
 
       - name: Build (hard)
         run: npm run build
@@ -32,7 +37,8 @@ jobs:
         run: npm run diag
 
       - name: Routes Check (soft)
-        run: npm run routes:check || true
+        run: npm run routes:check
+        continue-on-error: true
 
       - uses: actions/upload-artifact@v4
         with: { name: web-dist, path: dist/** }
