@@ -4,10 +4,10 @@ import { redYellowGreen, equalBreaks, binIndex } from "./scale.js";
 import "leaflet/dist/leaflet.css";
 
 /**
- * Лево: реальная карта Leaflet с точками из public/data/geo.csv (как было).
- * Право: бинированная «тепловая» панель по урожайности из public/data/kpi.csv.
- * - размер контейнеров фиксирован (карта 280px, тепловая 220px);
- * - UI не падает при отсутствии данных (graceful fallback).
+ * Лево: карта Leaflet с точками из public/data/geo.csv.
+ * Право: тепловая сетка 10x20 по bbox точек; значение ячейки — средняя урожайность
+ *        по точкам, попавшим в ячейку (join по Контрагент+Год из kpi.csv).
+ * Размер контейнеров фиксирован, UI не падает при отсутствии данных.
  */
 
 function Legend({ edges }) {
@@ -33,7 +33,7 @@ function Legend({ edges }) {
       <div style={{ display: "grid", gridTemplateColumns: `repeat(${bins}, 1fr)`, gap: 4, marginTop: 4, fontSize: 11, color: "#666" }}>
         {Array.from({ length: bins }).map((_, i) => {
           const lo = edges[i], hi = edges[i + 1];
-          const label = `${lo.toFixed(1)}–${hi.toFixed(1)}`;
+          const label = `${lo.toFixed(1)}–${hi.toFixed(1)} ц/га`;
           return <div key={i} style={{ textAlign: "center" }}>{label}</div>;
         })}
       </div>
@@ -41,16 +41,30 @@ function Legend({ edges }) {
   );
 }
 
+function pick(row, keys) {
+  const lower = Object.fromEntries(Object.entries(row).map(([k,v]) => [k.toLowerCase(), v]));
+  for (const k of keys) {
+    if (row[k] != null && row[k] !== "") return row[k];
+    if (lower[k.toLowerCase()] != null && lower[k.toLowerCase()] !== "") return lower[k.toLowerCase()];
+  }
+  return "";
+}
+const toNum = (v) => {
+  if (v == null || v === "") return NaN;
+  const n = parseFloat(String(v).replace(",", "."));
+  return Number.isFinite(n) ? n : NaN;
+};
+
 export default function MapView() {
-  const [geoRows, setGeoRows] = useState(null); // null = не загружено; [] = пусто
+  const [geoRows, setGeoRows] = useState(null);
   const [kpiRows, setKpiRows] = useState(null);
   const [error, setError] = useState("");
 
-  // Leaflet карта
+  // Leaflet
   const mapEl = useRef(null);
   const mapRef = useRef(null);
 
-  // грузим CSV из public/data
+  // загрузка CSV
   useEffect(() => {
     let alive = true;
     async function load() {
@@ -75,54 +89,73 @@ export default function MapView() {
   const hasPoints = Array.isArray(geoRows) && geoRows.length > 0;
   const hasYield  = Array.isArray(kpiRows) && kpiRows.length > 0;
 
-  // извлекаем массив урожайностей из kpiRows
-  const yields = useMemo(() => {
-    if (!hasYield) return [];
-    const pick = (obj, keys) => {
-      for (const k of keys) if (obj[k] != null) return obj[k];
-      // кейс-инсensitive поиск
-      const lower = Object.fromEntries(Object.entries(obj).map(([k,v]) => [k.toLowerCase(), v]));
-      for (const k of keys.map(k => k.toLowerCase())) if (lower[k] != null) return lower[k];
-      return null;
-    };
-    const keys = ["Урожайность_ц_га","Урожайность, ц/га","Yield_c_ha","Yield","yield","y"];
-    const toNum = (v) => {
-      if (v == null || v === "") return NaN;
-      const n = parseFloat(String(v).replace(",", "."));
-      return isFinite(n) ? n : NaN;
-    };
-    return kpiRows
-      .map(r => toNum(pick(r, keys)))
-      .filter(x => isFinite(x));
-  }, [kpiRows, hasYield]);
-
-  // считаем бины (равные интервалы) и делаем маленькую "тепловую" матрицу
-  const { edges, matrix } = useMemo(() => {
-    const bins = 6;
-    if (!yields.length) return { edges: null, matrix: [] };
-    const min = Math.min(...yields), max = Math.max(...yields);
-    const edges = equalBreaks(min, max, bins);
-
-    // заполняем матрицу 10x20 цветными ячейками (чисто визуально, без геопривязки)
-    const rows = 10, cols = 20;
-    const values = yields.length < rows * cols
-      ? [...yields, ...Array(rows * cols - yields.length).fill(yields[yields.length - 1])]
-      : yields.slice(0, rows * cols);
-    const matrix = [];
-    for (let r = 0; r < rows; r++) {
-      const row = [];
-      for (let c = 0; c < cols; c++) {
-        const v = values[r * cols + c];
-        const bi = binIndex(v, edges);
-        const t = (edges.length - 2) === 0 ? 1 : bi / (edges.length - 2);
-        row.push({ v, bi, color: redYellowGreen(t) });
+  // join geo×kpi по ключу (Контрагент, Год) -> массив точек с yield
+  const joined = useMemo(() => {
+    if (!hasPoints || !hasYield) return [];
+    const kpiMap = new Map();
+    for (const r of kpiRows) {
+      const contr = String(pick(r, ["Контрагент","contragent","client","Компания"])).trim();
+      const year  = String(pick(r, ["Год","year"])).trim();
+      const yld   = toNum(pick(r, ["Урожайность_ц_га","Урожайность, ц/га","Yield_c_ha","Yield","yield","y"]));
+      if (Number.isFinite(yld) && yld > 0) {
+        kpiMap.set(`${contr}||${year}`, yld);
       }
-      matrix.push(row);
     }
-    return { edges, matrix };
-  }, [yields]);
+    const pts = [];
+    for (const r of geoRows) {
+      const contr = String(pick(r, ["Контрагент","contragent","client","Компания"])).trim();
+      const year  = String(pick(r, ["Год","year"])).trim();
+      const lat   = toNum(pick(r, ["Широта","lat","latitude"]));
+      const lon   = toNum(pick(r, ["Долгота","lon","long","lng","longitude"]));
+      const yld   = kpiMap.get(`${contr}||${year}`);
+      if (Number.isFinite(lat) && Number.isFinite(lon) && Number.isFinite(yld)) {
+        pts.push({ lat, lon, yld, contr, year });
+      }
+    }
+    return pts;
+  }, [geoRows, kpiRows, hasPoints, hasYield]);
 
-  // инициализация Leaflet и точки
+  // bbox точек
+  const bbox = useMemo(() => {
+    if (!joined.length) return null;
+    let minLat=+90, maxLat=-90, minLon=+180, maxLon=-180;
+    for (const p of joined) {
+      if (p.lat < minLat) minLat = p.lat;
+      if (p.lat > maxLat) maxLat = p.lat;
+      if (p.lon < minLon) minLon = p.lon;
+      if (p.lon > maxLon) maxLon = p.lon;
+    }
+    return { minLat, maxLat, minLon, maxLon };
+  }, [joined]);
+
+  // агрегируем в сетку rows×cols по bbox
+  const rowsN = 10, colsN = 20;
+  const gridAgg = useMemo(() => {
+    if (!bbox || !joined.length) return { edges: null, grid: null, means: [] };
+    const { minLat, maxLat, minLon, maxLon } = bbox;
+    const latSpan = Math.max(1e-9, maxLat - minLat);
+    const lonSpan = Math.max(1e-9, maxLon - minLon);
+
+    // копилки суммы/кол-ва
+    const sum = Array.from({ length: rowsN }, () => Array(colsN).fill(0));
+    const cnt = Array.from({ length: rowsN }, () => Array(colsN).fill(0));
+    for (const p of joined) {
+      const ry = Math.floor((1 - (p.lat - minLat) / latSpan) * rowsN); // север сверху
+      const cx = Math.floor(((p.lon - minLon) / lonSpan) * colsN);
+      const r = Math.min(rowsN - 1, Math.max(0, ry));
+      const c = Math.min(colsN - 1, Math.max(0, cx));
+      sum[r][c] += p.yld;
+      cnt[r][c] += 1;
+    }
+    const mean = sum.map((row, r) => row.map((v, c) => cnt[r][c] ? v / cnt[r][c] : NaN));
+    const vals = mean.flat().filter(Number.isFinite);
+    const min = vals.length ? Math.min(...vals) : 0;
+    const max = vals.length ? Math.max(...vals) : 1;
+    const edges = equalBreaks(min, max, 6);
+    return { edges, grid: mean, means: vals };
+  }, [bbox, joined]);
+
+  // Leaflet точки
   useEffect(() => {
     let L;
     let group;
@@ -141,20 +174,14 @@ export default function MapView() {
           maxZoom: 18
         }).addTo(mapRef.current);
       }
-
-      // удалим прежние маркеры (если были)
       if (group) group.remove();
 
-      if (mapRef.current && hasPoints) {
+      if (mapRef.current && joined.length) {
         group = L.featureGroup();
-        for (const r of geoRows) {
-          const lat = parseFloat(r["Широта"]);
-          const lon = parseFloat(r["Долгота"]);
-          if (Number.isFinite(lat) && Number.isFinite(lon)) {
-            const m = L.circleMarker([lat, lon], { radius: 5, weight: 1 });
-            m.bindTooltip(`${r["Контрагент"] ?? "?"} (${r["Год"] ?? "?"})`);
-            m.addTo(group);
-          }
+        for (const p of joined) {
+          const m = L.circleMarker([p.lat, p.lon], { radius: 5, weight: 1 });
+          m.bindTooltip(`${p.contr} (${p.year}) — ${p.yld.toFixed(1)} ц/га`);
+          m.addTo(group);
         }
         if (group.getLayers().length) {
           group.addTo(mapRef.current);
@@ -163,7 +190,7 @@ export default function MapView() {
       }
     }
     init();
-  }, [hasPoints, geoRows]);
+  }, [joined]);
 
   return (
     <div style={{
@@ -173,16 +200,14 @@ export default function MapView() {
       minHeight: 360,
       padding: 16
     }}>
-      {/* ЛЕВО: точки */}
+      {/* ЛЕВО: карта с точками */}
       <section style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 16, background: "#fff" }}>
         <h3 style={{ margin: 0, marginBottom: 8 }}>Точки (бренд/гибрид)</h3>
 
-        {!geoRows && <div style={{ color: "#666" }}>Загрузка…</div>}
-        {geoRows && !hasPoints && (
-          <div style={{ color: "#666" }}>
-            Данных нет — UI работает без падений. Появятся при наличии <code>public/data/geo.csv</code>.
-          </div>
-        )}
+        {geoRows === null ? <div style={{ color: "#666" }}>Загрузка…</div> : null}
+        {geoRows && !hasPoints ? (
+          <div style={{ color: "#666" }}>Нет данных: появятся при наличии <code>public/data/geo.csv</code>.</div>
+        ) : null}
 
         <div
           ref={mapEl}
@@ -196,21 +221,20 @@ export default function MapView() {
         />
       </section>
 
-      {/* ПРАВО: бинированная тепловая панель */}
+      {/* ПРАВО: тепловая сетка bbox */}
       <section style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 16, background: "#fff" }}>
-        <h3 style={{ margin: 0, marginBottom: 8 }}>Градиент по урожайности</h3>
+        <h3 style={{ margin: 0, marginBottom: 8 }}>Градиент по урожайности (bbox-сетка)</h3>
 
-        {!kpiRows && <div style={{ color: "#666" }}>Загрузка…</div>}
-        {kpiRows && !hasYield && (
+        {kpiRows === null ? <div style={{ color: "#666" }}>Загрузка…</div> : null}
+        {(!gridAgg.grid || !gridAgg.means.length) ? (
           <div style={{ color: "#666" }}>
-            Данных нет — UI работает без падений. Появятся при наличии <code>public/data/kpi.csv</code>.
+            Нет данных для построения сетки. Нужны <code>public/data/geo.csv</code> и <code>public/data/kpi.csv</code> с пересекающимися
+            ключами <em>(Контрагент+Год)</em>.
           </div>
-        )}
-
-        {hasYield && (
+        ) : (
           <>
             <div style={{ fontSize: 13, color: "#666", marginBottom: 8 }}>
-              Строк KPI: {kpiRows.length}
+              Ячейки с данными: {gridAgg.means.length}; диапазон: {Math.min(...gridAgg.means).toFixed(1)}–{Math.max(...gridAgg.means).toFixed(1)} ц/га
             </div>
             <div
               style={{
@@ -222,27 +246,33 @@ export default function MapView() {
                 background: "#fff"
               }}
             >
-              {/* Матрица 10x20, фиксированная, чтобы размер не менялся */}
               <div style={{
                 display: "grid",
-                gridTemplateRows: "repeat(10, 1fr)",
+                gridTemplateRows: `repeat(${rowsN}, 1fr)`,
                 gap: 2,
                 height: "100%"
               }}>
-                {matrix.map((row, ri) => (
-                  <div key={ri} style={{ display: "grid", gridTemplateColumns: "repeat(20, 1fr)", gap: 2 }}>
-                    {row.map((cell, ci) => (
-                      <div
-                        key={ci}
-                        title={isFinite(cell.v) ? `${cell.v.toFixed(1)} ц/га` : "—"}
-                        style={{ height: "100%", background: cell.color, borderRadius: 2 }}
-                      />
-                    ))}
+                {gridAgg.grid.map((row, ri) => (
+                  <div key={ri} style={{ display: "grid", gridTemplateColumns: `repeat(${colsN}, 1fr)`, gap: 2 }}>
+                    {row.map((v, ci) => {
+                      if (!Number.isFinite(v)) {
+                        return <div key={ci} style={{ height: "100%", background: "#eee", borderRadius: 2 }} title="нет данных" />;
+                      }
+                      const bi = binIndex(v, gridAgg.edges);
+                      const t = (gridAgg.edges.length - 2) === 0 ? 1 : bi / (gridAgg.edges.length - 2);
+                      return (
+                        <div
+                          key={ci}
+                          title={`${v.toFixed(1)} ц/га`}
+                          style={{ height: "100%", background: redYellowGreen(t), borderRadius: 2 }}
+                        />
+                      );
+                    })}
                   </div>
                 ))}
               </div>
             </div>
-            <Legend edges={edges} />
+            <Legend edges={gridAgg.edges} />
           </>
         )}
       </section>
