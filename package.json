@@ -29,6 +29,7 @@
     "globals": "^16.4.0",
     "http-server": "^14.1.1",
     "kill-port": "^2.0.1",
+    "lazy-ass": "^1.6.0",
     "start-server-and-test": "^2.1.2",
     "vite": "npm:rolldown-vite@7.1.14"
   },
