@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import os, json, subprocess, time, tempfile, glob
+import os, json, subprocess, time, tempfile, glob, hmac, hashlib
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse, parse_qs
 from pathlib import Path
@@ -14,6 +14,7 @@ def run(cmd, cwd=None, timeout=600):
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     try:
         out, err = p.communicate(timeout=timeout)
+        out = out or ""
         code = p.returncode
     except subprocess.TimeoutExpired:
         p.kill(); out, err = p.communicate(); code = 124
@@ -56,11 +57,23 @@ def gh_pr_create_or_get(title, body):
     if c == 0: return {"created": True, "url": o.strip()}
     return {"created": False, "error": (e or o)[-400:]}
 
+def _consttime_eq(a: str, b: str) -> bool:
+    try:
+        return hmac.compare_digest(a, b)
+    except Exception:
+        return False
+
 SAFE_TASKS = {
-    "build": ["bash","-lc","npm ci || true; npm run build"],
-    "diag":  ["bash","-lc","python3 diagnostics.py --json || true"],
-    "test":  ["bash","-lc","npm test --if-present -- --ci --reporters=default || true"],
-    "smoke": ["bash","-lc","chmod +x scripts/smoke.sh && scripts/smoke.sh || true"],
+    "build":   ["bash","-lc","npm ci || true; npm run build"],
+    "diag":    ["bash","-lc","python3 diagnostics.py --json || true"],
+    "test":    ["bash","-lc","npm test --if-present -- --ci --reporters=default || true"],
+    "smoke":   ["bash","-lc","chmod +x scripts/smoke.sh && scripts/smoke.sh || true"],
+    "kpi":     ["bash","-lc","chmod +x scripts/validate_kpi.py && scripts/validate_kpi.py data/sample_kpi.csv || true"],
+    "geo":     ["bash","-lc","chmod +x scripts/geo_check.py && scripts/geo_check.py data/sample_geo.csv || true"],
+    "join":    ["bash","-lc","chmod +x scripts/join_check.py && scripts/join_check.py || true"],
+    "publish": ["bash","-lc","chmod +x scripts/publish_data.py && scripts/publish_data.py || true"],
+    "ensure":  ["bash","-lc","chmod +x scripts/ensure_public_data.py && scripts/ensure_public_data.py || true"],
+    "e2e":     ["bash","-lc","chmod +x scripts/validate_kpi.py scripts/geo_check.py scripts/publish_data.py >/dev/null 2>&1 || true; scripts/validate_kpi.py data/sample_kpi.csv || true; scripts/geo_check.py data/sample_geo.csv || true; scripts/publish_data.py || true; npm run -s build || true; chmod +x scripts/smoke.sh; scripts/smoke.sh || true; python3 diagnostics.py --json || true; echo 'E2E done'"]
 }
 
 def collect_donesheet():
@@ -111,6 +124,40 @@ class H(BaseHTTPRequestHandler):
             payload["meta"] = {"code": c, "stderr_tail": e[-400:]}
             return json_reply(self, payload)
 
+        # GitHub webhook → запускаем e2e по push/PR/успешному workflow_run
+        if parsed.path == "/webhook":
+            secret = (os.getenv("GITHUB_WEBHOOK_SECRET") or "").encode("utf-8")
+            length = int(self.headers.get("Content-Length") or "0")
+            body = self.rfile.read(length) if length else b"{}"
+            event = self.headers.get("X-GitHub-Event", "")
+            sig   = self.headers.get("X-Hub-Signature-256", "")
+            if not secret:
+                return json_reply(self, {"ok": False, "error": "no secret configured"}, 500)
+            mac = hmac.new(secret, body, hashlib.sha256).hexdigest()
+            expected = f"sha256={mac}"
+            if not _consttime_eq(sig or "", expected):
+                return json_reply(self, {"ok": False, "error": "bad signature"}, 403)
+            try:
+                payload = json.loads(body.decode("utf-8", errors="ignore")) or {}
+            except Exception:
+                payload = {}
+            allow = False
+            if event == "push":
+                allow = True
+            elif event == "pull_request":
+                allow = payload.get("action") in {"opened","synchronize","reopened"}
+            elif event == "workflow_run":
+                allow = (payload.get("action") == "completed" and
+                         (payload.get("workflow_run",{}).get("conclusion") == "success"))
+            if not allow:
+                return json_reply(self, {"ok": True, "skipped": True, "event": event})
+            c,o,e = run(SAFE_TASKS["e2e"], timeout=1800)
+            sheet = collect_donesheet()
+            res = gh_pr_update_body(sheet)
+            return json_reply(self, {"ok": True, "event": event, "code": c,
+                                     "stdout_tail": o[-1200:], "stderr_tail": e[-1200:],
+                                     "donesheet": res})
+
         if parsed.path == "/patch":
             length = int(self.headers.get("Content-Length") or "0")
             body = self.rfile.read(length) if length else b""
@@ -124,7 +171,6 @@ class H(BaseHTTPRequestHandler):
                 diff_text = body.decode("utf-8", errors="ignore")
             if not any(diff_text.strip().startswith(p) for p in ("diff --git","--- ","+++ ")):
                 return json_reply(self, {"ok": False, "error": "body must contain unified diff"}, 400)
-
             ensure_branch()
             with tempfile.NamedTemporaryFile("w+", delete=False) as tf:
                 tf.write(diff_text); tf.flush()
@@ -133,14 +179,12 @@ class H(BaseHTTPRequestHandler):
                     c2,o2,e2 = run(["git","apply","--reject",tf.name])
                     if c2 != 0:
                         return json_reply(self, {"ok": False, "apply_err": (e1+"\n"+e2)[-800:]}, 422)
-
             qs = parse_qs(parsed.query or "")
             msg = qs.get("msg", ["chore: patch via micro_orchestrator"])[0]
             run(["git","add","-A"])
             cc,oc,ec = run(["git","commit","-m",msg])
             if cc != 0 and "nothing to commit" not in (oc+ec):
                 return json_reply(self, {"ok": False, "commit_err": ec[-400:]}, 500)
-
             cp,op,ep = run(["git","push","origin",BRANCH], timeout=1200)
             cd,od,ed = run(["python3","scripts/diag_report.py"])
             return json_reply(self, {

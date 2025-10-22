@@ -1,111 +1,123 @@
 #!/usr/bin/env python3
-# diagnostics.py — версия без зависимости от Vite manifest
-# Проверяет:
-# 1) Наличие dist/index.html и dist/assets/*
-# 2) Ссылки в dist/index.html (href/src) реально существуют
-# 3) document.write в исходниках и в собранных js
-# 4) Подсказки по картам/метрикам
-import re, json, sys
+# -*- coding: utf-8 -*-
+"""
+Diagnostics runner for RayAgro:
+- Build artifacts check (dist/)
+- KPI validator (scripts/validate_kpi.py data/sample_kpi.csv)
+- GEO validator (scripts/geo_check.py data/sample_geo.csv)
+- Public data presence (public/data/kpi.csv, public/data/geo.csv)
+- Map/KPI policy reminder
+Exits with code>0 on build absence or validator errors; public/data missing is warn with suggested fix.
+"""
+import json, os, subprocess, time
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
-SRC = ROOT / "src"
+ROOT = Path(__file__).parent.resolve()
 DIST = ROOT / "dist"
-ASSETS = DIST / "assets"
+LOGS = ROOT / "logs"
+PUBD = ROOT / "public" / "data"
+LOGS.mkdir(exist_ok=True)
 
-ISSUES = []
+def run(cmd, timeout=300):
+    p = subprocess.Popen(cmd, cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    try:
+        out, err = p.communicate(timeout=timeout)
+        return p.returncode, out, err
+    except subprocess.TimeoutExpired:
+        p.kill(); out, err = p.communicate()
+        return 124, out, err
 
-def add_issue(kind, where, msg, fix=None, level="warn"):
-    ISSUES.append({"kind": kind, "where": where, "msg": msg, "fix": fix, "level": level})
+def have_build():
+    return (DIST / "index.html").exists() and (DIST / "assets").exists()
 
-def exists_check():
-    if not DIST.exists():
-        add_issue("dist", "dist", "Папка dist не найдена. Сборка проходила?", level="error")
-        return
-    if not (DIST / "index.html").exists():
-        add_issue("dist", "dist/index.html", "Файл index.html не найден в dist.", level="error")
-    if not ASSETS.exists():
-        add_issue("assets", "dist/assets", "Папка dist/assets не найдена. Rolldown/Vite сложил ассеты куда-то ещё?", level="warn")
+def _run_json(cmd, log_prefix, timeout=60):
+    code, out, err = run(cmd, timeout=timeout)
+    try:
+        payload = json.loads(out) if out.strip().startswith("{") else {"raw": out}
+    except Exception:
+        payload = {"raw": out}
+    ts = int(time.time())
+    (LOGS / f"{log_prefix}-{ts}.json").write_text(
+        json.dumps({"code": code, "report": payload}, ensure_ascii=False, indent=2),
+        encoding="utf-8"
+    )
+    return payload, code
 
-def parse_index_links():
-    index = DIST / "index.html"
-    if not index.exists():
-        return
-    html = index.read_text(encoding="utf-8", errors="ignore")
-    paths = set()
-    # простейший парс: href="..." и src="..."
-    for attr in re.findall(r'(?:href|src)=["\']([^"\']+)["\']', html):
-        # интересуют относительные пути внутри dist
-        if attr.startswith("http://") or attr.startswith("https://") or attr.startswith("//"):
-            continue
-        # убираем ведущие слеши
-        rel = attr[1:] if attr.startswith("/") else attr
-        paths.add(rel)
-    missing = []
-    for rel in sorted(paths):
-        p = DIST / rel
-        if not p.exists():
-            missing.append(rel)
-    if missing:
-        add_issue("assets", "dist/index.html", f"В index.html есть ссылки на отсутствующие файлы: {missing[:10]}...", level="error")
+def run_kpi():
+    script = ROOT / "scripts" / "validate_kpi.py"
+    src = ROOT / "data" / "sample_kpi.csv"
+    if not script.exists() or not src.exists():
+        return {"skipped": True, "reason": "missing validator or sample data"}, 0
+    return _run_json(["python3", str(script), str(src)], "validator-kpi", timeout=60)
 
-def scan_document_write_sources():
-    for p in SRC.rglob("*"):
-        if p.suffix.lower() not in (".js", ".jsx", ".ts", ".tsx"):
-            continue
-        try:
-            txt = p.read_text(encoding="utf-8", errors="ignore")
-        except Exception:
-            continue
-        if "document.write" in txt:
-            add_issue("document-write", str(p), "Найден document.write в исходниках", 
-                      "Заменить на безопасную вставку (DOMContentLoaded/requestAnimationFrame)")
-
-def scan_document_write_build():
-    if not ASSETS.exists():
-        return
-    for p in ASSETS.rglob("*.js"):
-        try:
-            txt = p.read_text(encoding="utf-8", errors="ignore")
-        except Exception:
-            continue
-        if "document.write" in txt:
-            add_issue("document-write", str(p), "Найден document.write в собранном бандле",
-                      "Починить в исходниках, затем пересобрать")
-
-def runtime_smells_sources():
-    for p in SRC.rglob("*"):
-        if p.suffix.lower() not in (".js", ".jsx", ".ts", ".tsx"):
-            continue
-        try:
-            txt = p.read_text(encoding="utf-8", errors="ignore")
-        except Exception:
-            continue
-        # импорты вида from 'src/...' часто ломаются в проде без alias
-        if re.search(r"from ['\"]src/.*['\"]", txt):
-            add_issue("import", str(p), "Подозрительный импорт 'src/...'; лучше относительный путь или alias")
-
-def kpi_hints():
-    add_issue("map-kpis", "data", "Скрывать нули, округление 0.1, единицы ц/га и %, дедуп по ключу Контрагент+Год")
+def run_geo():
+    script = ROOT / "scripts" / "geo_check.py"
+    src = ROOT / "data" / "sample_geo.csv"
+    if not script.exists() or not src.exists():
+        return {"skipped": True, "reason": "missing geo validator or sample data"}, 0
+    return _run_json(["python3", str(script), str(src)], "validator-geo", timeout=60)
 
 def main():
-    exists_check()
-    parse_index_links()
-    scan_document_write_sources()
-    scan_document_write_build()
-    runtime_smells_sources()
-    kpi_hints()
+    issues = []
+    exit_code = 0
 
-    # Вывод
-    if "--json" in sys.argv:
-        print(json.dumps({"issues": ISSUES}, ensure_ascii=False, indent=2))
+    # 1) Build artifacts
+    if not have_build():
+        issues.append({"kind":"assets","where":"dist","msg":"Нет build-артефактов: dist/index.html или dist/assets","level":"error"})
+        exit_code = 1
+
+    # 2) Policy reminder
+    issues.append({
+        "kind":"map-kpis","where":"data",
+        "msg":"Скрывать нули, округление 0.1, единицы ц/га и %, дедуп по ключу Контрагент+Год",
+        "fix": None, "level":"warn"
+    })
+
+    # 3) KPI validator
+    kpi_report, _ = run_kpi()
+    if not kpi_report.get("skipped"):
+        kpi_errs = len(kpi_report.get("errors", []) or [])
+        kpi_warns = len(kpi_report.get("warnings", []) or [])
+        issues.append({
+            "kind":"kpi","where":kpi_report.get("source","data/sample_kpi.csv"),
+            "msg":f"KPI: {kpi_report.get('rows_in')}→{kpi_report.get('rows_out')}, err={kpi_errs}, warn={kpi_warns}",
+            "level":"error" if kpi_errs>0 else "info",
+            "clean_path":kpi_report.get("clean_path")
+        })
+        if kpi_errs>0: exit_code = 1
     else:
-        for i in ISSUES:
-            print(f"[{i['level']}] [{i['kind']}] {i['where']}: {i['msg']}")
-            if i.get("fix"): print(f"  fix: {i['fix']}")
-    # Диагностика не должна блочить пайплайн на этом этапе:
-    # Возвращаем 0, даже если есть предупреждения/ошибки — мы просто репортим.
-    sys.exit(0)
+        issues.append({"kind":"kpi","where":"scripts/validate_kpi.py","msg":f"skipped: {kpi_report.get('reason')}","level":"info"})
+
+    # 4) GEO validator
+    geo_report, _ = run_geo()
+    if not geo_report.get("skipped"):
+        geo_errs = len(geo_report.get("errors", []) or [])
+        geo_warns = len(geo_report.get("warnings", []) or [])
+        issues.append({
+            "kind":"geo","where":geo_report.get("source","data/sample_geo.csv"),
+            "msg":f"GEO: {geo_report.get('rows_in')}→{geo_report.get('rows_out')}, err={geo_errs}, warn={geo_warns}",
+            "level":"error" if geo_errs>0 else "info",
+            "clean_path":geo_report.get("clean_path")
+        })
+        if geo_errs>0: exit_code = 1
+    else:
+        issues.append({"kind":"geo","where":"scripts/geo_check.py","msg":f"skipped: {geo_report.get('reason')}","level":"info"})
+
+    # 5) Public data presence (front reads /data/*.csv from dist)
+    need = [("public/data/kpi.csv","/data/kpi.csv"), ("public/data/geo.csv","/data/geo.csv")]
+    for fs_path, url_path in need:
+        p = ROOT / fs_path
+        if not p.exists():
+            issues.append({
+                "kind":"public-data","where":fs_path,
+                "msg":f"Отсутствует {url_path} (frontend будет 404)",
+                "level":"warn",
+                "fix":"Запусти: /run?task=publish (если есть cleaned_*), или /run?task=ensure (создать заглушки)"
+            })
+
+    report = {"issues": issues}
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return exit_code
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

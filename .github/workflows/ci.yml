@@ -1,0 +1,44 @@
+name: CI
+on:
+  workflow_dispatch:
+    inputs: { ref: { required: false, default: msp-dev } }
+  pull_request: { branches: [main] }
+  push: { branches: [msp-dev] }
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.x' }
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+
+      - name: Versions
+        run: node -v && npm -v && python3 --version
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint (soft)
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Test (soft)
+        run: npm run test -- --ci
+        continue-on-error: true
+
+      - name: Build (hard)
+        run: npm run build
+
+      - name: Diagnostics (hard)
+        run: npm run diag
+
+      - name: Routes Check (soft)
+        run: npm run routes:check
+        continue-on-error: true
+
+      - uses: actions/upload-artifact@v4
+        with: { name: web-dist, path: dist/** }

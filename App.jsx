@@ -1,10 +1,17 @@
-import React from 'react';
+import React from "react";
+import MapView from "./components/MapView.jsx";
+import "./index.css";
 
 export default function App() {
   return (
-    <div style={{ padding: 16 }}>
-      <h1>RayAgro Yield Dashboard</h1>
-      <p>UI загружен. Код-сплит включён (App через React.lazy). </p>
+    <div className="app-root">
+      <header className="app-header">
+        <h1>RayAgro Yield Dashboard</h1>
+        <p className="app-sub">Каркас карты с устойчивыми заглушками</p>
+      </header>
+      <main>
+        <MapView />
+      </main>
     </div>
   );
 }
