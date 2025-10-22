@@ -1,43 +1,56 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { parseCSV } from "./csv.js";
+import { redYellowGreen, equalBreaks, binIndex } from "./scale.js";
 import "leaflet/dist/leaflet.css";
 
 /**
- * Реальная карта Leaflet:
- * - Фиксированная высота контейнера (не меняется размер).
- * - Левый блок: точки по GEO (public/data/geo.csv).
- * - Правый блок: «тепловая» заглушка с градиентом урожайности + легенда.
- * - Graceful fallback: если данных нет — показываем текст, но UI не падает.
+ * Лево: реальная карта Leaflet с точками из public/data/geo.csv (как было).
+ * Право: бинированная «тепловая» панель по урожайности из public/data/kpi.csv.
+ * - размер контейнеров фиксирован (карта 280px, тепловая 220px);
+ * - UI не падает при отсутствии данных (graceful fallback).
  */
 
-function Legend() {
-  const gradStyle = {
-    background: "linear-gradient(90deg, #c0392b 0%, #f1c40f 50%, #27ae60 100%)",
-    height: 10,
-    borderRadius: 6,
-  };
+function Legend({ edges }) {
+  if (!edges || edges.length < 2) {
+    return (
+      <div style={{ marginTop: 8 }}>
+        <div style={{ height: 10, borderRadius: 6, background: "linear-gradient(90deg,#c0392b,#f1c40f,#27ae60)" }} />
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginTop: 4, color: "#666" }}>
+          <span>низкая</span><span>средняя</span><span>высокая</span>
+        </div>
+      </div>
+    );
+  }
+  const bins = edges.length - 1;
   return (
-    <div style={{ marginTop: 8 }}>
-      <div style={gradStyle} />
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginTop: 4, color: "#666" }}>
-        <span>низкая</span>
-        <span>средняя</span>
-        <span>высокая</span>
+    <div style={{ marginTop: 10 }}>
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${bins}, 1fr)`, gap: 4 }}>
+        {Array.from({ length: bins }).map((_, i) => {
+          const t = bins === 1 ? 1 : i / (bins - 1);
+          return <div key={i} style={{ height: 10, borderRadius: 4, background: redYellowGreen(t) }} />;
+        })}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${bins}, 1fr)`, gap: 4, marginTop: 4, fontSize: 11, color: "#666" }}>
+        {Array.from({ length: bins }).map((_, i) => {
+          const lo = edges[i], hi = edges[i + 1];
+          const label = `${lo.toFixed(1)}–${hi.toFixed(1)}`;
+          return <div key={i} style={{ textAlign: "center" }}>{label}</div>;
+        })}
       </div>
     </div>
   );
 }
 
 export default function MapView() {
-  const [geoRows, setGeoRows] = useState(null);   // null = не загружено; [] = пусто
+  const [geoRows, setGeoRows] = useState(null); // null = не загружено; [] = пусто
   const [kpiRows, setKpiRows] = useState(null);
   const [error, setError] = useState("");
 
-  // контейнер и инстанс карты
+  // Leaflet карта
   const mapEl = useRef(null);
   const mapRef = useRef(null);
 
-  // 1) Загружаем CSV из public/data
+  // грузим CSV из public/data
   useEffect(() => {
     let alive = true;
     async function load() {
@@ -62,18 +75,64 @@ export default function MapView() {
   const hasPoints = Array.isArray(geoRows) && geoRows.length > 0;
   const hasYield  = Array.isArray(kpiRows) && kpiRows.length > 0;
 
-  // 2) Инициализируем Leaflet (динамический импорт, чтобы не ломать сборку)
+  // извлекаем массив урожайностей из kpiRows
+  const yields = useMemo(() => {
+    if (!hasYield) return [];
+    const pick = (obj, keys) => {
+      for (const k of keys) if (obj[k] != null) return obj[k];
+      // кейс-инсensitive поиск
+      const lower = Object.fromEntries(Object.entries(obj).map(([k,v]) => [k.toLowerCase(), v]));
+      for (const k of keys.map(k => k.toLowerCase())) if (lower[k] != null) return lower[k];
+      return null;
+    };
+    const keys = ["Урожайность_ц_га","Урожайность, ц/га","Yield_c_ha","Yield","yield","y"];
+    const toNum = (v) => {
+      if (v == null || v === "") return NaN;
+      const n = parseFloat(String(v).replace(",", "."));
+      return isFinite(n) ? n : NaN;
+    };
+    return kpiRows
+      .map(r => toNum(pick(r, keys)))
+      .filter(x => isFinite(x));
+  }, [kpiRows, hasYield]);
+
+  // считаем бины (равные интервалы) и делаем маленькую "тепловую" матрицу
+  const { edges, matrix } = useMemo(() => {
+    const bins = 6;
+    if (!yields.length) return { edges: null, matrix: [] };
+    const min = Math.min(...yields), max = Math.max(...yields);
+    const edges = equalBreaks(min, max, bins);
+
+    // заполняем матрицу 10x20 цветными ячейками (чисто визуально, без геопривязки)
+    const rows = 10, cols = 20;
+    const values = yields.length < rows * cols
+      ? [...yields, ...Array(rows * cols - yields.length).fill(yields[yields.length - 1])]
+      : yields.slice(0, rows * cols);
+    const matrix = [];
+    for (let r = 0; r < rows; r++) {
+      const row = [];
+      for (let c = 0; c < cols; c++) {
+        const v = values[r * cols + c];
+        const bi = binIndex(v, edges);
+        const t = (edges.length - 2) === 0 ? 1 : bi / (edges.length - 2);
+        row.push({ v, bi, color: redYellowGreen(t) });
+      }
+      matrix.push(row);
+    }
+    return { edges, matrix };
+  }, [yields]);
+
+  // инициализация Leaflet и точки
   useEffect(() => {
     let L;
-    let markers = [];
+    let group;
     async function init() {
       const mod = await import("leaflet");
       L = mod.default || mod;
 
-      // лениво создаём карту один раз
       if (!mapRef.current && mapEl.current) {
         mapRef.current = L.map(mapEl.current, {
-          center: [55.751244, 37.618423], // Москва как дефолт
+          center: [55.751244, 37.618423],
           zoom: 5,
           zoomControl: true,
           attributionControl: false,
@@ -83,13 +142,11 @@ export default function MapView() {
         }).addTo(mapRef.current);
       }
 
-      // чистим предыдущие слои-точки
-      markers.forEach(m => m.remove());
-      markers = [];
+      // удалим прежние маркеры (если были)
+      if (group) group.remove();
 
-      // добавляем точки, если есть
       if (mapRef.current && hasPoints) {
-        const group = L.featureGroup();
+        group = L.featureGroup();
         for (const r of geoRows) {
           const lat = parseFloat(r["Широта"]);
           const lon = parseFloat(r["Долгота"]);
@@ -106,7 +163,6 @@ export default function MapView() {
       }
     }
     init();
-    // Ничего не возвращаем: Leaflet сам управляет DOM внутри контейнера
   }, [hasPoints, geoRows]);
 
   return (
@@ -117,17 +173,17 @@ export default function MapView() {
       minHeight: 360,
       padding: 16
     }}>
+      {/* ЛЕВО: точки */}
       <section style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 16, background: "#fff" }}>
         <h3 style={{ margin: 0, marginBottom: 8 }}>Точки (бренд/гибрид)</h3>
 
         {!geoRows && <div style={{ color: "#666" }}>Загрузка…</div>}
         {geoRows && !hasPoints && (
           <div style={{ color: "#666" }}>
-            Данных нет — UI работает без падений. Загрузятся, когда появится <code>public/data/geo.csv</code>.
+            Данных нет — UI работает без падений. Появятся при наличии <code>public/data/geo.csv</code>.
           </div>
         )}
 
-        {/* Контейнер фиксированной высоты — размер не меняется */}
         <div
           ref={mapEl}
           style={{
@@ -140,34 +196,54 @@ export default function MapView() {
         />
       </section>
 
+      {/* ПРАВО: бинированная тепловая панель */}
       <section style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 16, background: "#fff" }}>
         <h3 style={{ margin: 0, marginBottom: 8 }}>Градиент по урожайности</h3>
 
         {!kpiRows && <div style={{ color: "#666" }}>Загрузка…</div>}
-        {kpiRows && !hasYield && <div style={{ color: "#666" }}>
-          Данных нет — UI работает без падений. Загрузятся, когда появится <code>public/data/kpi.csv</code>.
-        </div>}
+        {kpiRows && !hasYield && (
+          <div style={{ color: "#666" }}>
+            Данных нет — UI работает без падений. Появятся при наличии <code>public/data/kpi.csv</code>.
+          </div>
+        )}
 
         {hasYield && (
-          <div>
+          <>
             <div style={{ fontSize: 13, color: "#666", marginBottom: 8 }}>
-              Пример-данные KPI: {kpiRows.length} строк
+              Строк KPI: {kpiRows.length}
             </div>
-            <div style={{
-              height: 220,
-              border: "1px dashed #ddd",
-              borderRadius: 8,
-              display: "grid",
-              placeItems: "center",
-              background: "linear-gradient(90deg, #c0392b 0%, #f1c40f 50%, #27ae60 100%)",
-              opacity: 0.25
-            }}>
-              <span style={{ color: "#555", background: "rgba(255,255,255,0.8)", padding: "2px 6px", borderRadius: 6 }}>
-                Здесь позже будет реальный расчет бинов/heatmap
-              </span>
+            <div
+              style={{
+                height: 220,
+                border: "1px solid #e5e7eb",
+                borderRadius: 12,
+                overflow: "hidden",
+                padding: 8,
+                background: "#fff"
+              }}
+            >
+              {/* Матрица 10x20, фиксированная, чтобы размер не менялся */}
+              <div style={{
+                display: "grid",
+                gridTemplateRows: "repeat(10, 1fr)",
+                gap: 2,
+                height: "100%"
+              }}>
+                {matrix.map((row, ri) => (
+                  <div key={ri} style={{ display: "grid", gridTemplateColumns: "repeat(20, 1fr)", gap: 2 }}>
+                    {row.map((cell, ci) => (
+                      <div
+                        key={ci}
+                        title={isFinite(cell.v) ? `${cell.v.toFixed(1)} ц/га` : "—"}
+                        style={{ height: "100%", background: cell.color, borderRadius: 2 }}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
             </div>
-            <Legend />
-          </div>
+            <Legend edges={edges} />
+          </>
         )}
       </section>
 
