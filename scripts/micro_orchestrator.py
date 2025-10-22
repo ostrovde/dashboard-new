@@ -61,6 +61,7 @@ SAFE_TASKS = {
     "diag":  ["bash","-lc","python3 diagnostics.py --json || true"],
     "test":  ["bash","-lc","npm test --if-present -- --ci --reporters=default || true"],
     "smoke": ["bash","-lc","chmod +x scripts/smoke.sh && scripts/smoke.sh || true"],
+    "kpi":   ["bash","-lc","chmod +x scripts/validate_kpi.py && scripts/validate_kpi.py data/sample_kpi.csv || true"],
 }
 
 def collect_donesheet():
