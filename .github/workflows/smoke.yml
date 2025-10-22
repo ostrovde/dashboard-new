@@ -1,79 +1,14 @@
-name: smoke
-
+name: Smoke
 on:
-  push:
-    branches: [ "msp-dev" ]
-    paths:
-      - "**/*.js"
-      - "**/*.jsx"
-      - "**/*.css"
-      - "**/*.json"
-      - "index.html"
-      - "scripts/**"
-      - "data/**"
-      - "diagnostics.py"
-      - ".github/workflows/smoke.yml"
-  pull_request:
-    branches: [ "main" ]
-
+  push: { branches: [ "msp-dev" ] }
+  pull_request: { branches: [ "main", "msp-dev" ] }
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-
-      - name: Install deps
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-
-      - name: KPI validate (sample)
-        run: |
-          python3 scripts/validate_kpi.py data/sample_kpi.csv | tee kpi.json
-          exit 0  # учебные ошибки допускаем
-
-      - name: GEO validate (sample)
-        run: |
-          python3 scripts/geo_check.py data/sample_geo.csv | tee geo.json
-          exit 0
-
-      - name: Publish cleaned CSV to public/data
-        run: |
-          python3 scripts/publish_data.py | tee publish.json
-          ls -l public/data || true
-
-      - name: Diagnostics summary (JSON)
-        run: |
-          python3 diagnostics.py --json | tee diagnostics.json
-          exit 0
-
-      - name: Smoke (static serve sanity)
-        run: |
-          chmod +x scripts/smoke.sh
-          ./scripts/smoke.sh
-
-      - name: Upload logs & artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: smoke-kpi-geo-build
-          path: |
-            logs/*.log
-            logs/*.http
-            logs/validator-*.json
-            diagnostics.json
-            kpi.json
-            geo.json
-            publish.json
-            public/data/*.csv
-            dist/**
-          if-no-files-found: ignore
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm ci
+      - run: npm run build+smoke
+        env: { CI: "true" }
