@@ -1,6 +1,0 @@
-RayAgro MCP patch proof
-Project: RayAgro Yield Dashboard
-Branch: msp-dev
-Source: micro_orchestrator /patch
-Purpose: Demonstrate PATCH -> commit -> push -> diagnostics
-Keep this file for audit.
