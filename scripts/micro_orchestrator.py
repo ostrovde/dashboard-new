@@ -57,12 +57,14 @@ def gh_pr_create_or_get(title, body):
     return {"created": False, "error": (e or o)[-400:]}
 
 SAFE_TASKS = {
-    "build": ["bash","-lc","npm ci || true; npm run build"],
-    "diag":  ["bash","-lc","python3 diagnostics.py --json || true"],
-    "test":  ["bash","-lc","npm test --if-present -- --ci --reporters=default || true"],
-    "smoke": ["bash","-lc","chmod +x scripts/smoke.sh && scripts/smoke.sh || true"],
-    "kpi":   ["bash","-lc","chmod +x scripts/validate_kpi.py && scripts/validate_kpi.py data/sample_kpi.csv || true"],
-    "geo":   ["bash","-lc","chmod +x scripts/geo_check.py && scripts/geo_check.py data/sample_geo.csv || true"],
+    "build":   ["bash","-lc","npm ci || true; npm run build"],
+    "diag":    ["bash","-lc","python3 diagnostics.py --json || true"],
+    "test":    ["bash","-lc","npm test --if-present -- --ci --reporters=default || true"],
+    "smoke":   ["bash","-lc","chmod +x scripts/smoke.sh && scripts/smoke.sh || true"],
+    "kpi":     ["bash","-lc","chmod +x scripts/validate_kpi.py && scripts/validate_kpi.py data/sample_kpi.csv || true"],
+    "geo":     ["bash","-lc","chmod +x scripts/geo_check.py && scripts/geo_check.py data/sample_geo.csv || true"],
+    "publish": ["bash","-lc","chmod +x scripts/publish_data.py && scripts/publish_data.py || true"],
+    "ensure":  ["bash","-lc","chmod +x scripts/ensure_public_data.py && scripts/ensure_public_data.py || true"],
 }
 
 def collect_donesheet():

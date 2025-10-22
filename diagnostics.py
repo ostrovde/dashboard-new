@@ -2,13 +2,12 @@
 # -*- coding: utf-8 -*-
 """
 Diagnostics runner for RayAgro:
-- Проверка билд-артефактов (dist/index.html, assets/)
-- KPI-валидатор (scripts/validate_kpi.py data/sample_kpi.csv)
-- GEO-валидатор (scripts/geo_check.py data/sample_geo.csv)
-- Сводка предупреждений по картам/единицам измерения
-
-Выход: JSON в stdout; не «валим» пайплайн на предупреждениях, но код ошибки >0,
-если нет build-артефактов или валидаторы дали ошибки.
+- Build artifacts check (dist/)
+- KPI validator (scripts/validate_kpi.py data/sample_kpi.csv)
+- GEO validator (scripts/geo_check.py data/sample_geo.csv)
+- Public data presence (public/data/kpi.csv, public/data/geo.csv)
+- Map/KPI policy reminder
+Exits with code>0 on build absence or validator errors; public/data missing is warn with suggested fix.
 """
 import json, os, subprocess, time
 from pathlib import Path
@@ -16,6 +15,7 @@ from pathlib import Path
 ROOT = Path(__file__).parent.resolve()
 DIST = ROOT / "dist"
 LOGS = ROOT / "logs"
+PUBD = ROOT / "public" / "data"
 LOGS.mkdir(exist_ok=True)
 
 def run(cmd, timeout=300):
@@ -63,68 +63,58 @@ def main():
 
     # 1) Build artifacts
     if not have_build():
-        issues.append({
-            "kind": "assets",
-            "where": "dist",
-            "msg": "Нет build-артефактов: dist/index.html или dist/assets",
-            "level": "error"
-        })
+        issues.append({"kind":"assets","where":"dist","msg":"Нет build-артефактов: dist/index.html или dist/assets","level":"error"})
         exit_code = 1
 
-    # 2) Политика карт/единиц (информативно)
+    # 2) Policy reminder
     issues.append({
-        "kind": "map-kpis",
-        "where": "data",
-        "msg": "Скрывать нули, округление 0.1, единицы ц/га и %, дедуп по ключу Контрагент+Год",
-        "fix": None,
-        "level": "warn"
+        "kind":"map-kpis","where":"data",
+        "msg":"Скрывать нули, округление 0.1, единицы ц/га и %, дедуп по ключу Контрагент+Год",
+        "fix": None, "level":"warn"
     })
 
     # 3) KPI validator
-    kpi_report, kpi_code = run_kpi()
+    kpi_report, _ = run_kpi()
     if not kpi_report.get("skipped"):
         kpi_errs = len(kpi_report.get("errors", []) or [])
         kpi_warns = len(kpi_report.get("warnings", []) or [])
         issues.append({
-            "kind": "kpi",
-            "where": kpi_report.get("source", "data/sample_kpi.csv"),
-            "msg": f"KPI: {kpi_report.get('rows_in')}→{kpi_report.get('rows_out')}, err={kpi_errs}, warn={kpi_warns}",
-            "level": "error" if kpi_errs > 0 else "info",
-            "clean_path": kpi_report.get("clean_path")
+            "kind":"kpi","where":kpi_report.get("source","data/sample_kpi.csv"),
+            "msg":f"KPI: {kpi_report.get('rows_in')}→{kpi_report.get('rows_out')}, err={kpi_errs}, warn={kpi_warns}",
+            "level":"error" if kpi_errs>0 else "info",
+            "clean_path":kpi_report.get("clean_path")
         })
-        if kpi_errs > 0:
-            exit_code = 1
+        if kpi_errs>0: exit_code = 1
     else:
-        issues.append({
-            "kind": "kpi",
-            "where": "scripts/validate_kpi.py",
-            "msg": f"KPI validator skipped: {kpi_report.get('reason')}",
-            "level": "info"
-        })
+        issues.append({"kind":"kpi","where":"scripts/validate_kpi.py","msg":f"skipped: {kpi_report.get('reason')}","level":"info"})
 
     # 4) GEO validator
-    geo_report, geo_code = run_geo()
+    geo_report, _ = run_geo()
     if not geo_report.get("skipped"):
         geo_errs = len(geo_report.get("errors", []) or [])
         geo_warns = len(geo_report.get("warnings", []) or [])
         issues.append({
-            "kind": "geo",
-            "where": geo_report.get("source", "data/sample_geo.csv"),
-            "msg": f"GEO: {geo_report.get('rows_in')}→{geo_report.get('rows_out')}, err={geo_errs}, warn={geo_warns}",
-            "level": "error" if geo_errs > 0 else "info",
-            "clean_path": geo_report.get("clean_path")
+            "kind":"geo","where":geo_report.get("source","data/sample_geo.csv"),
+            "msg":f"GEO: {geo_report.get('rows_in')}→{geo_report.get('rows_out')}, err={geo_errs}, warn={geo_warns}",
+            "level":"error" if geo_errs>0 else "info",
+            "clean_path":geo_report.get("clean_path")
         })
-        if geo_errs > 0:
-            exit_code = 1
+        if geo_errs>0: exit_code = 1
     else:
-        issues.append({
-            "kind": "geo",
-            "where": "scripts/geo_check.py",
-            "msg": f"Geo validator skipped: {geo_report.get('reason')}",
-            "level": "info"
-        })
+        issues.append({"kind":"geo","where":"scripts/geo_check.py","msg":f"skipped: {geo_report.get('reason')}","level":"info"})
 
-    # Итоговый отчёт
+    # 5) Public data presence (front reads /data/*.csv from dist)
+    need = [("public/data/kpi.csv","/data/kpi.csv"), ("public/data/geo.csv","/data/geo.csv")]
+    for fs_path, url_path in need:
+        p = ROOT / fs_path
+        if not p.exists():
+            issues.append({
+                "kind":"public-data","where":fs_path,
+                "msg":f"Отсутствует {url_path} (frontend будет 404)",
+                "level":"warn",
+                "fix":"Запусти: /run?task=publish (если есть cleaned_*), или /run?task=ensure (создать заглушки)"
+            })
+
     report = {"issues": issues}
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return exit_code
