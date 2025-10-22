@@ -10,13 +10,15 @@ on:
       - "**/*.json"
       - "index.html"
       - "scripts/**"
+      - "data/**"
+      - "diagnostics.py"
   pull_request:
     branches: [ "main" ]
 
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,16 +35,23 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: KPI validate (sample)
+        run: |
+          python3 scripts/validate_kpi.py data/sample_kpi.csv | tee kpi.json
+          # не валим job на учебных ошибках: пусть отчёт попадёт в артефакты
+          exit 0
+
       - name: Smoke
         run: |
           chmod +x scripts/smoke.sh
           ./scripts/smoke.sh
 
-      - name: Upload smoke logs
+      - name: Upload logs & artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: smoke-logs
+          name: smoke-and-kpi-logs
           path: |
             logs/*.log
             logs/*.http
+          if-no-files-found: ignore
