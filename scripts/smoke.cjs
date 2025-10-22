@@ -1,5 +1,13 @@
-const http=require('http');
-function get(u){return new Promise((res,rej)=>http.get(u,r=>{let d='';r.on('data',c=>d+=c);r.on('end',()=>res({c:r.statusCode,b:d}));}).on('error',rej));}
+const http = require('http');
+const https = require('https');
+const { URL } = require('url');
+function get(u){
+  const U = new URL(u);
+  const client = U.protocol === 'https:' ? https : http;
+  return new Promise((res,rej)=>client.get(U,r=>{
+    let d=''; r.on('data',c=>d+=c); r.on('end',()=>res({c:r.statusCode,b:d}));
+  }).on('error',rej));
+}
 (async()=>{
   const base=process.env.STAGE_URL||'http://localhost:8080';
   const r=await get(base+'/');

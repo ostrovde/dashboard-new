@@ -8,8 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "diag": "python scripts/diagnostics.py",
-    "routes:check": "python scripts/vite_validate_routes.py",
+    "diag": "python3 scripts/diagnostics.py",
+    "routes:check": "python3 scripts/vite_validate_routes.py",
     "smoke": "node scripts/smoke.cjs"
   },
   "dependencies": {
