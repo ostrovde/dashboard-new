@@ -1,0 +1,7 @@
+[Unit]
+Description=RayAgro nightly E2E
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/work/dashboard-new
+ExecStart=/usr/bin/curl -fsS -X POST http://127.0.0.1:8078/run?task=e2e
