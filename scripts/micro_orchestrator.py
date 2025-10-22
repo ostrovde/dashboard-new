@@ -63,8 +63,10 @@ SAFE_TASKS = {
     "smoke":   ["bash","-lc","chmod +x scripts/smoke.sh && scripts/smoke.sh || true"],
     "kpi":     ["bash","-lc","chmod +x scripts/validate_kpi.py && scripts/validate_kpi.py data/sample_kpi.csv || true"],
     "geo":     ["bash","-lc","chmod +x scripts/geo_check.py && scripts/geo_check.py data/sample_geo.csv || true"],
+    "join":    ["bash","-lc","chmod +x scripts/join_check.py && scripts/join_check.py || true"],
     "publish": ["bash","-lc","chmod +x scripts/publish_data.py && scripts/publish_data.py || true"],
     "ensure":  ["bash","-lc","chmod +x scripts/ensure_public_data.py && scripts/ensure_public_data.py || true"],
+    "e2e":     ["bash","-lc","chmod +x scripts/validate_kpi.py scripts/geo_check.py scripts/publish_data.py >/dev/null 2>&1 || true; scripts/validate_kpi.py data/sample_kpi.csv || true; scripts/geo_check.py data/sample_geo.csv || true; scripts/publish_data.py || true; npm run -s build || true; chmod +x scripts/smoke.sh; scripts/smoke.sh || true; python3 diagnostics.py --json || true; echo 'E2E done'"]
 }
 
 def collect_donesheet():
