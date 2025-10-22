@@ -4,10 +4,11 @@
 Diagnostics runner for RayAgro:
 - Проверка билд-артефактов (dist/index.html, assets/)
 - KPI-валидатор (scripts/validate_kpi.py data/sample_kpi.csv)
+- GEO-валидатор (scripts/geo_check.py data/sample_geo.csv)
 - Сводка предупреждений по картам/единицам измерения
 
 Выход: JSON в stdout; не «валим» пайплайн на предупреждениях, но код ошибки >0,
-если нет build-артефактов или KPI-валидатор дал ошибки.
+если нет build-артефактов или валидаторы дали ошибки.
 """
 import json, os, subprocess, time
 from pathlib import Path
@@ -27,25 +28,34 @@ def run(cmd, timeout=300):
         return 124, out, err
 
 def have_build():
-    idx = DIST / "index.html"
-    assets = DIST / "assets"
-    return idx.exists() and assets.exists()
+    return (DIST / "index.html").exists() and (DIST / "assets").exists()
+
+def _run_json(cmd, log_prefix, timeout=60):
+    code, out, err = run(cmd, timeout=timeout)
+    try:
+        payload = json.loads(out) if out.strip().startswith("{") else {"raw": out}
+    except Exception:
+        payload = {"raw": out}
+    ts = int(time.time())
+    (LOGS / f"{log_prefix}-{ts}.json").write_text(
+        json.dumps({"code": code, "report": payload}, ensure_ascii=False, indent=2),
+        encoding="utf-8"
+    )
+    return payload, code
 
 def run_kpi():
-    """Запуск KPI-валидатора, возвращаем dict отчёта + код процесса."""
     script = ROOT / "scripts" / "validate_kpi.py"
     src = ROOT / "data" / "sample_kpi.csv"
     if not script.exists() or not src.exists():
         return {"skipped": True, "reason": "missing validator or sample data"}, 0
-    code, out, err = run(["python3", str(script), str(src)], timeout=60)
-    try:
-        report = json.loads(out) if out.strip().startswith("{") else {"raw": out}
-    except Exception:
-        report = {"raw": out}
-    # сохраняем отдельный лог валидатора
-    ts = int(time.time())
-    (LOGS / f"validator-{ts}.json").write_text(json.dumps({"code": code, "report": report}, ensure_ascii=False, indent=2), encoding="utf-8")
-    return report, code
+    return _run_json(["python3", str(script), str(src)], "validator-kpi", timeout=60)
+
+def run_geo():
+    script = ROOT / "scripts" / "geo_check.py"
+    src = ROOT / "data" / "sample_geo.csv"
+    if not script.exists() or not src.exists():
+        return {"skipped": True, "reason": "missing geo validator or sample data"}, 0
+    return _run_json(["python3", str(script), str(src)], "validator-geo", timeout=60)
 
 def main():
     issues = []
@@ -72,30 +82,45 @@ def main():
 
     # 3) KPI validator
     kpi_report, kpi_code = run_kpi()
-    kpi_summary = {
-        "skipped": kpi_report.get("skipped", False),
-        "rows_in": kpi_report.get("rows_in"),
-        "rows_out": kpi_report.get("rows_out"),
-        "clean_path": kpi_report.get("clean_path"),
-        "errors_count": len(kpi_report.get("errors", []) or []),
-        "warnings_count": len(kpi_report.get("warnings", []) or []),
-    }
-    if not kpi_summary["skipped"]:
-        if kpi_summary["errors_count"] > 0:
-            exit_code = 1
+    if not kpi_report.get("skipped"):
+        kpi_errs = len(kpi_report.get("errors", []) or [])
+        kpi_warns = len(kpi_report.get("warnings", []) or [])
         issues.append({
             "kind": "kpi",
             "where": kpi_report.get("source", "data/sample_kpi.csv"),
-            "msg": f"KPI: {kpi_summary['rows_in']}→{kpi_summary['rows_out']}, "
-                   f"err={kpi_summary['errors_count']}, warn={kpi_summary['warnings_count']}",
-            "level": "error" if kpi_summary["errors_count"] > 0 else "info",
-            "clean_path": kpi_summary["clean_path"]
+            "msg": f"KPI: {kpi_report.get('rows_in')}→{kpi_report.get('rows_out')}, err={kpi_errs}, warn={kpi_warns}",
+            "level": "error" if kpi_errs > 0 else "info",
+            "clean_path": kpi_report.get("clean_path")
         })
+        if kpi_errs > 0:
+            exit_code = 1
     else:
         issues.append({
             "kind": "kpi",
             "where": "scripts/validate_kpi.py",
             "msg": f"KPI validator skipped: {kpi_report.get('reason')}",
+            "level": "info"
+        })
+
+    # 4) GEO validator
+    geo_report, geo_code = run_geo()
+    if not geo_report.get("skipped"):
+        geo_errs = len(geo_report.get("errors", []) or [])
+        geo_warns = len(geo_report.get("warnings", []) or [])
+        issues.append({
+            "kind": "geo",
+            "where": geo_report.get("source", "data/sample_geo.csv"),
+            "msg": f"GEO: {geo_report.get('rows_in')}→{geo_report.get('rows_out')}, err={geo_errs}, warn={geo_warns}",
+            "level": "error" if geo_errs > 0 else "info",
+            "clean_path": geo_report.get("clean_path")
+        })
+        if geo_errs > 0:
+            exit_code = 1
+    else:
+        issues.append({
+            "kind": "geo",
+            "where": "scripts/geo_check.py",
+            "msg": f"Geo validator skipped: {geo_report.get('reason')}",
             "level": "info"
         })
 

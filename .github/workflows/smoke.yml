@@ -38,7 +38,18 @@ jobs:
       - name: KPI validate (sample)
         run: |
           python3 scripts/validate_kpi.py data/sample_kpi.csv | tee kpi.json
-          # не валим job на учебных ошибках: пусть отчёт попадёт в артефакты
+          # Учебные ошибки допустимы — не валим job
+          exit 0
+
+      - name: GEO validate (sample)
+        run: |
+          python3 scripts/geo_check.py data/sample_geo.csv | tee geo.json
+          exit 0
+
+      - name: Diagnostics summary (JSON)
+        run: |
+          python3 diagnostics.py --json | tee diagnostics.json
+          # Диагностика может завершиться кодом 1 из-за учебных errors — не валим job
           exit 0
 
       - name: Smoke
@@ -50,8 +61,12 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: smoke-and-kpi-logs
+          name: smoke-kpi-geo-diagnostics
           path: |
             logs/*.log
             logs/*.http
+            logs/validator-*.json
+            diagnostics.json
+            kpi.json
+            geo.json
           if-no-files-found: ignore
