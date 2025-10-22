@@ -1,5 +1,4 @@
-name: smoke
-
+name: Smoke
 on:
   push:
     branches: [ "msp-dev" ]
