@@ -1,0 +1,24 @@
+name: CI
+on:
+  workflow_dispatch:
+    inputs: { ref: { required: false, default: msp-dev } }
+  pull_request: { branches: [main] }
+  push: { branches: [msp-dev] }
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test -- --ci
+      - run: npm run build
+      - name: Diagnostics
+        run: npm run diag
+      - name: Routes Check
+        run: npm run routes:check || true
+      - uses: actions/upload-artifact@v4
+        with: { name: web-dist, path: dist/** }
