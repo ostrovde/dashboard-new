@@ -12,13 +12,14 @@ on:
       - "scripts/**"
       - "data/**"
       - "diagnostics.py"
+      - ".github/workflows/smoke.yml"
   pull_request:
     branches: [ "main" ]
 
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,21 +39,24 @@ jobs:
       - name: KPI validate (sample)
         run: |
           python3 scripts/validate_kpi.py data/sample_kpi.csv | tee kpi.json
-          # Учебные ошибки допустимы — не валим job
-          exit 0
+          exit 0  # учебные ошибки допускаем
 
       - name: GEO validate (sample)
         run: |
           python3 scripts/geo_check.py data/sample_geo.csv | tee geo.json
           exit 0
 
+      - name: Publish cleaned CSV to public/data
+        run: |
+          python3 scripts/publish_data.py | tee publish.json
+          ls -l public/data || true
+
       - name: Diagnostics summary (JSON)
         run: |
           python3 diagnostics.py --json | tee diagnostics.json
-          # Диагностика может завершиться кодом 1 из-за учебных errors — не валим job
           exit 0
 
-      - name: Smoke
+      - name: Smoke (static serve sanity)
         run: |
           chmod +x scripts/smoke.sh
           ./scripts/smoke.sh
@@ -61,7 +65,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: smoke-kpi-geo-diagnostics
+          name: smoke-kpi-geo-build
           path: |
             logs/*.log
             logs/*.http
@@ -69,4 +73,7 @@ jobs:
             diagnostics.json
             kpi.json
             geo.json
+            publish.json
+            public/data/*.csv
+            dist/**
           if-no-files-found: ignore
