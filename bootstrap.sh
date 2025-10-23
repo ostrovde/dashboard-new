@@ -272,3 +272,16 @@ echo "::add-mask::$GITHUB_TOKEN"
 
 fiecho "NEXT: follow agent_spec.yaml workflow"
 
+
+# ensure workdir/origin is valid before any push
+fix_origin_workdir() {
+  NWO="${2:-${REPO:-$GITHUB_REPOSITORY}}"
+  case "$NWO" in */*) ;; *) echo "[bootstrap] FATAL: bad repo NWO=\"$NWO\"" >&2; exit 1;; esac
+  if [ -n "${GITHUB_ACTIONS:-}" ] && [ -n "${GITHUB_TOKEN:-}" ]; then
+    echo "::add-mask::$GITHUB_TOKEN"
+    git -C workdir remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${NWO}.git"
+  else
+    git -C workdir remote set-url origin "https://github.com/${NWO}.git"
+  fi
+  echo "[bootstrap] workdir/origin (pre-push) -> $(git -C workdir remote get-url origin)" >&2
+}
