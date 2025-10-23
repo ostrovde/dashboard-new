@@ -1,4 +1,21 @@
 #!/usr/bin/env bash
+
+# --- tiny helpers injected ---
+log(){ printf "[bootstrap] %s\n" "$*" >&2; }
+warn(){ printf "[bootstrap][WARN] %s\n" "$*" >&2; }
+push_with_token(){
+  local BR="${NEW_BRANCH:-$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo)}"
+  local NWO_EFFECTIVE="${2:-${REPO:-${GITHUB_REPOSITORY:-}}}"
+  [ -n "$NWO_EFFECTIVE" ] || NWO_EFFECTIVE="${1:-$NWO_EFFECTIVE}"
+  if [ -n "${GITHUB_ACTIONS:-}" ] && [ -n "${GITHUB_TOKEN:-}" ]; then
+    echo "::add-mask::${GITHUB_TOKEN}"
+    git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${NWO_EFFECTIVE}.git"
+  fi
+  [ -n "$BR" ] || { warn "Пустое имя ветки"; return 1; }
+  log "Пушим ветку: ${BR} → origin"
+  git push -u origin "$BR"
+}
+# --- end tiny helpers ---
 set -euo pipefail
 if [[ -z "${GITHUB_TOKEN:-}" ]]; then echo "ERROR: GITHUB_TOKEN is not set." >&2; exit 1; fi
 if ! command -v gh >/dev/null 2>&1; then echo "ERROR: gh not installed." >&2; exit 1; fi
