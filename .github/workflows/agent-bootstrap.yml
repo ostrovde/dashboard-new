@@ -1,4 +1,5 @@
 name: Agent Bootstrap
+
 on:
   workflow_dispatch:
     inputs:
@@ -6,27 +7,55 @@ on:
         description: "ID GitHub issue (число)"
         required: true
       repo:
-        description: "owner/repo (по умолчанию текущий)"
+        description: "owner/repo (если пусто — возьмём текущий)"
         required: false
-        default: ${{ github.repository }}
+        default: ""   # НЕЛЬЗЯ использовать ${{ github.repository }} здесь
+
 permissions:
+  actions: write
   contents: write
   pull-requests: write
+
 jobs:
   run-bootstrap:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Auth GH CLI
-        run: gh auth status || echo "${{ github.token }}" | gh auth login --with-token
-      - name: Make bootstrap executable
+      - name: Checkout current repo
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: GH version & auth status
+      - name: Configure git identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global --list | sed -n 's/^user\./&/p'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh --version
+          gh auth status || echo "$GH_TOKEN" | gh auth login --with-token
+          gh auth status -t || true
+
+      - name: Ensure bootstrap executable
         run: chmod +x ./bootstrap.sh
+
       - name: Run bootstrap
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AGENT_SPEC: ./agent_spec.yaml
-        run: ./bootstrap.sh "${{ inputs.issue_id }}" "${{ inputs.repo }}"
-      - name: List PRs / Runs
+          REPO_INPUT: ${{ inputs.repo }}
+        run: |
+          REPO="$REPO_INPUT"
+          # если инпут пуст — берём текущий репозиторий из контекста раннера
+          if [ -z "$REPO" ]; then REPO="$GITHUB_REPOSITORY"; fi
+          echo "Using repo: $REPO"
+          ./bootstrap.sh "${{ inputs.issue_id }}" "$REPO"
+
+      - name: List PRs / runs (for visibility)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh pr list --limit 10 || true
           gh run list --limit 10 || true
