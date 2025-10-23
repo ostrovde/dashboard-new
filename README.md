@@ -18,3 +18,6 @@ If you are developing a production application, we recommend using TypeScript wi
 
 ## Update #27
 - Added data refresh functionality on 2025-10-23
+
+## Update #28
+- Added data refresh functionality on 2025-10-23
