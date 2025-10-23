@@ -46,9 +46,9 @@ export default function App() {
           margin: "0 auto",
           opacity: 0.8
         }>
-          <p>RayAgro Yield Dashboard • Создан агентом для Issue #34</p>
+          <p>RayAgro Yield Dashboard • Создан агентом для Issue #35</p>
           <p style={ fontSize: "0.9rem", marginTop: "0.5rem" }>
-            2025-10-23 17:06:19
+            2025-10-23 17:33:35
           </p>
         </div>
       </footer>
