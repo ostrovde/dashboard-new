@@ -25,6 +25,12 @@ jobs:
         with:
           persist-credentials: true
 
+      - name: Configure git identity
+        run: |
+          git config --global user.name  "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global --list | sed -n 's/^user\./&/p'
+
       - name: GH version & auth status
         env:
           GH_TOKEN: ${{ github.token }}
@@ -32,12 +38,6 @@ jobs:
           gh --version
           gh auth status || echo "$GH_TOKEN" | gh auth login --with-token
           gh auth status -t || true
-
-      - name: Configure git identity
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --global --list | sed -n 's/^user\./&/p'
 
       - name: Ensure bootstrap executable
         run: chmod +x ./bootstrap.sh
