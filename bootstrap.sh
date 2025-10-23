@@ -10,6 +10,15 @@ REPO="${2:-$(gh repo view --json nameWithOwner -q .nameWithOwner)}"
 rm -rf workdir
 gh repo clone "$REPO" workdir >/dev/null
 cd workdir
+  # --- CI auth for pushes inside workdir ---
+  if [ -n "$GITHUB_ACTIONS" ]; then
+    echo "::add-mask::$GITHUB_TOKEN"
+    REPO_EFFECTIVE="${2:-${REPO:-$GITHUB_REPOSITORY}}"
+    if [ -z "$REPO_EFFECTIVE" ]; then echo "REPO_EFFECTIVE empty; cannot configure remote" >&2; exit 1; fi
+    git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO_EFFECTIVE}.git"
+    echo "[debug] remotes after set-url:"; git remote -v
+  fi
+  # --- end CI auth ---
 
 DEFAULT_BRANCH="$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name)"
 AGENT_SPEC="${AGENT_SPEC:-./agent_spec.yaml}"
@@ -66,7 +75,7 @@ if [ -n "$GITHUB_ACTIONS" ]; then
 fi
 
 # --- end CI auth for pushes ---
-  git push -u origin HEAD
+  push_with_token -u origin HEAD
 echo "::add-mask::$GITHUB_TOKEN"
 REPO="${2:-${REPO:-$GITHUB_REPOSITORY}}"
 echo "::add-mask::$GITHUB_TOKEN"
