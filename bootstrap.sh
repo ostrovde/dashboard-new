@@ -1,4 +1,25 @@
 #!/usr/bin/env bash
+# --- FORCE origin to correct repo URL (early) ---
+REPO_EFFECTIVE="${2:-${REPO:-$GITHUB_REPOSITORY}}"
+if [ -z "$REPO_EFFECTIVE" ] || [ "$REPO_EFFECTIVE" = "origin" ]; then
+  echo "[bootstrap] Bad REPO_EFFECTIVE='$REPO_EFFECTIVE'" >&2
+  exit 1
+fi
+
+fix_origin() {
+  # если бежим в CI с токеном — используем x-access-token
+  if [ -n "${GITHUB_ACTIONS:-}" ] && [ -n "${GITHUB_TOKEN:-}" ]; then
+    echo "::add-mask::$GITHUB_TOKEN"
+fix_origin 
+  else
+fix_origin 
+  fi
+  echo "[bootstrap] origin now -> $(git remote get-url origin)" >&2
+}
+
+# на случай, если дальше где-то используют NWO — синхронизируем его
+NWO="${REPO_EFFECTIVE}"
+# --- END FORCE ---
 # --- begin: FORCE origin to correct repo URL ---
 NWO="${REPO_EFFECTIVE}"
 # Определяем owner/repo (NWO) надёжно и один раз
