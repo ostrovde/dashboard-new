@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # --- begin: FORCE origin to correct repo URL ---
+NWO="${REPO_EFFECTIVE}"
 # Определяем owner/repo (NWO) надёжно и один раз
 REPO_EFFECTIVE="${2:-${REPO:-$GITHUB_REPOSITORY}}"
 case "$REPO_EFFECTIVE" in
@@ -11,17 +12,17 @@ esac
 # Без условий: ставим корректный origin прямо сейчас.
 if [ -n "$GITHUB_ACTIONS" ] && [ -n "$GITHUB_TOKEN" ]; then
   echo "::add-mask::$GITHUB_TOKEN"
-  git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO_EFFECTIVE}.git"
+fix_origin
 else
-  git remote set-url origin "https://github.com/${REPO_EFFECTIVE}.git"
+fix_origin
 fi
 
 # Упрощённый помощник: перед любым push всегда переставляем origin ещё раз.
 fix_origin(){ 
   if [ -n "$GITHUB_ACTIONS" ] && [ -n "$GITHUB_TOKEN" ]; then
-    git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO_EFFECTIVE}.git"
+fix_origin
   else
-    git remote set-url origin "https://github.com/${REPO_EFFECTIVE}.git"
+fix_origin
   fi
   # Для наглядности в логах:
   echo "[bootstrap] origin now -> $(git remote get-url origin)" >&2
@@ -38,17 +39,17 @@ fix_origin(){
     return 1
   fi
 
-  local want="https://github.com/${NWO}.git"
+  local want="https://github.com/${REPO_EFFECTIVE}.git"
   local cur
   cur="$(git remote get-url origin 2>/dev/null || true)"
 
   # Если origin пустой, указывает на /origin.git, имеет хвостовой слэш или просто не наш repo — чиним.
-  if [ -z "$cur" ] || ! printf "%s" "$cur" | grep -Eq "github\.com/${NWO}(\.git)?/?$"; then
+  if [ -z "$cur" ] || ! printf "%s" "$cur" | grep -Eq "github\.com/${REPO_EFFECTIVE}(\.git)?/?$"; then
     if [ -n "$GITHUB_ACTIONS" ] && [ -n "$GITHUB_TOKEN" ]; then
       echo "::add-mask::$GITHUB_TOKEN"
-      git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${NWO}.git"
+fix_origin
     else
-      git remote set-url origin "$want"
+fix_origin
     fi
   fi
 }
