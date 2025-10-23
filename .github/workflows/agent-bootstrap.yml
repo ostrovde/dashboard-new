@@ -1,0 +1,32 @@
+name: Agent Bootstrap
+on:
+  workflow_dispatch:
+    inputs:
+      issue_id:
+        description: "ID GitHub issue (число)"
+        required: true
+      repo:
+        description: "owner/repo (по умолчанию текущий)"
+        required: false
+        default: ${{ github.repository }}
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  run-bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Auth GH CLI
+        run: gh auth status || echo "${{ github.token }}" | gh auth login --with-token
+      - name: Make bootstrap executable
+        run: chmod +x ./bootstrap.sh
+      - name: Run bootstrap
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AGENT_SPEC: ./agent_spec.yaml
+        run: ./bootstrap.sh "${{ inputs.issue_id }}" "${{ inputs.repo }}"
+      - name: List PRs / Runs
+        run: |
+          gh pr list --limit 10 || true
+          gh run list --limit 10 || true
