@@ -1,16 +1,56 @@
-# React + Vite
+# RayAgro Yield Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Расширенный дашборд урожайности с аналитикой для агротехнических данных.
 
-Currently, two official plugins are available:
+## Описание
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Этот дашборд создан для анализа данных урожайности различных культур и гибридов. 
+Включает в себя интерактивные карты, графики и таблицы данных.
 
-## React Compiler
+## Функциональность
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- 📊 **KPI показатели** - ключевые метрики урожайности
+- 🗺️ **Интерактивные карты** - визуализация локаций испытаний  
+- 📈 **Аналитика** - графики и диаграммы
+- 📋 **Таблицы данных** - детальная информация
+- 🔍 **Фильтрация** - поиск по различным параметрам
 
-## Expanding the ESLint configuration
+## Технологии
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- **Frontend**: React 18, Vite
+- **Карты**: Leaflet, React-Leaflet
+- **Графики**: Recharts
+- **Стили**: CSS3, Flexbox, Grid
+
+## Структура проекта
+
+```
+src/
+├── components/     # React компоненты
+│   ├── Dashboard.jsx        # Главный дашборд
+│   ├── KPISection.jsx      # KPI показатели
+│   ├── FiltersPanel.jsx    # Панель фильтров
+│   ├── MapsSection.jsx     # Карты
+│   └── AnalyticsSection.jsx # Аналитика
+├── utils/          # Вспомогательные функции
+│   ├── constants.js       # Константы и настройки
+│   └── dataProcessing.js  # Обработка данных
+├── styles/         # Стили
+│   └── index.css   # Основные стили
+├── App.jsx         # Главный компонент приложения
+└── main.jsx        # Точка входа
+```
+
+## Разработка
+
+Дашборд создан как основа для дальнейшего развития. 
+Агент может постепенно добавлять новый функционал через Issues.
+
+## Контакты
+
+- **Репозиторий**: https://github.com/ostrovde/dashboard-new
+- **Автоматизация**: GitHub Actions + Python Agent
+
+----
+
+*Создано с помощью автономного агента разработки*

@@ -2,16 +2,17 @@ import os
 import subprocess
 import sys
 import requests
-import time
-import re
 import json
+from datetime import datetime
 
 class Agent:
     def __init__(self):
         self.repo = os.environ.get('GITHUB_REPOSITORY', 'ostrovde/dashboard-new')
         
     def create_pr(self, issue_number, branch_name):
-        token = os.environ['GITHUB_TOKEN']
+        token = os.environ.get('GITHUB_TOKEN')
+        if not token:
+            raise ValueError("GITHUB_TOKEN environment variable is required")
         owner, repo = self.repo.split('/')
         
         response = requests.post(
@@ -75,8 +76,8 @@ class Agent:
             }
         }
         
-        with open("package.json", "w") as f:
-            json.dump(package_data, f, indent=2)
+        with open("package.json", "w", encoding='utf-8') as f:
+            json.dump(package_data, f, indent=2, ensure_ascii=False)
         
         print("> Created package.json with all dependencies")
         return True
@@ -101,22 +102,22 @@ class Agent:
   </body>
 </html>'''
         
-        with open("index.html", "w") as f:
+        with open("index.html", "w", encoding='utf-8') as f:
             f.write(index_html)
         
         # 2. main.jsx
-        main_jsx = '''import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.jsx'
-import './index.css'
+        main_jsx = '''import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App.jsx";
+import "./index.css";
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <App />
-  </React.StrictMode>,
-)'''
+  </React.StrictMode>
+);'''
         
-        with open("src/main.jsx", "w") as f:
+        with open("src/main.jsx", "w", encoding='utf-8') as f:
             f.write(main_jsx)
         
         # 3. index.css
@@ -319,7 +320,7 @@ main {
   }
 }'''
         
-        with open("src/index.css", "w") as f:
+        with open("src/index.css", "w", encoding='utf-8') as f:
             f.write(index_css)
         
         print("> Created main application files")
@@ -380,7 +381,7 @@ export default function App() {{
         }}>
           <p>RayAgro Yield Dashboard • Создан агентом для Issue #{issue_number}</p>
           <p style={{ fontSize: "0.9rem", marginTop: "0.5rem" }}>
-            {time.strftime('%Y-%m-%d %H:%M:%S')}
+            {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
           </p>
         </div>
       </footer>
@@ -388,41 +389,41 @@ export default function App() {{
   );
 }}'''
         
-        with open("src/App.jsx", "w") as f:
+        with open("src/App.jsx", "w", encoding='utf-8') as f:
             f.write(app_jsx)
         
         # 2. Dashboard.jsx - основной компонент дашборда
-        dashboard_jsx = '''import React, { useState, useEffect } from "react";
+        dashboard_jsx = f'''import React, {{ useState, useEffect }} from "react";
 import KPISection from "./components/KPISection.jsx";
 import FiltersPanel from "./components/FiltersPanel.jsx";
 import MapsSection from "./components/MapsSection.jsx";
 import AnalyticsSection from "./components/AnalyticsSection.jsx";
 
-export default function Dashboard() {
+export default function Dashboard() {{
   const [activeTab, setActiveTab] = useState("overview");
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  useEffect(() => {{
     // Имитация загрузки данных
-    setTimeout(() => {
+    setTimeout(() => {{
       setData([
-        { id: 1, hybrid: "Подсолнечник-1", yield: 28.5, oil: 45.2, location: "Локация A" },
-        { id: 2, hybrid: "Кукуруза-1", yield: 85.3, oil: 0, location: "Локация B" },
-        { id: 3, hybrid: "Подсолнечник-2", yield: 32.1, oil: 48.7, location: "Локация C" }
+        {{ id: 1, hybrid: "Подсолнечник-1", yield: 28.5, oil: 45.2, location: "Локация A" }},
+        {{ id: 2, hybrid: "Кукуруза-1", yield: 85.3, oil: 0, location: "Локация B" }},
+        {{ id: 3, hybrid: "Подсолнечник-2", yield: 32.1, oil: 48.7, location: "Локация C" }}
       ]);
       setLoading(false);
-    }, 1000);
-  }, []);
+    }}, 1000);
+  }}, []);
 
   const tabs = [
-    { id: "overview", label: "Обзор", icon: "[📊]" },
-    { id: "analytics", label: "Аналитика", icon: "[📈]" },
-    { id: "maps", label: "Карты", icon: "[🗺️]" },
-    { id: "table", label: "Таблица", icon: "[📋]" }
+    {{ id: "overview", label: "Обзор", icon: "📊" }},
+    {{ id: "analytics", label: "Аналитика", icon: "📈" }},
+    {{ id: "maps", label: "Карты", icon: "🗺️" }},
+    {{ id: "table", label: "Таблица", icon: "📋" }}
   ];
 
-  if (loading) {
+  if (loading) {{
     return (
       <div style={{
         display: "flex",
@@ -433,37 +434,37 @@ export default function Dashboard() {
         color: "#64748b"
       }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>[⏳]</div>
+          <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>⏳</div>
           <p>Загрузка расширенного дашборда...</p>
         </div>
       </div>
     );
-  }
+  }}
 
   return (
     <div>
-      {/* Вкладки */}
+      <!-- Вкладки -->
       <div className="tabs">
-        {tabs.map(tab => (
+        {{tabs.map(tab => (
           <button
-            key={tab.id}
-            className={`tab ${activeTab === tab.id ? "active" : ""}`}
-            onClick={() => setActiveTab(tab.id)}
+            key={{tab.id}}
+            className={{`tab ${{activeTab === tab.id ? "active" : ""}}`}}
+            onClick={{() => setActiveTab(tab.id)}}
           >
-            <span style={{ marginRight: "0.5rem" }}>{tab.icon}</span>
-            {tab.label}
+            <span style={{ marginRight: "0.5rem" }}>{{tab.icon}}</span>
+            {{tab.label}}
           </button>
-        ))}
+        ))}}
       </div>
 
-      {/* Панель фильтров */}
+      <!-- Панель фильтров -->
       <FiltersPanel />
 
-      {/* KPI показатели */}
-      <KPISection data={data} />
+      <!-- KPI показатели -->
+      <KPISection data={{data}} />
 
-      {/* Контент вкладок */}
-      {activeTab === "overview" && (
+      <!-- Контент вкладок -->
+      {{activeTab === "overview" && (
         <div>
           <div className="card">
             <h2 style={{ marginBottom: "1rem", color: "#1e293b" }}>Обзор производительности</h2>
@@ -475,23 +476,23 @@ export default function Dashboard() {
           
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
             <MapsSection />
-            <AnalyticsSection data={data} />
+            <AnalyticsSection data={{data}} />
           </div>
         </div>
-      )}
+      )}}
 
-      {activeTab === "analytics" && (
+      {{activeTab === "analytics" && (
         <div className="card">
           <h2 style={{ marginBottom: "1rem", color: "#1e293b" }}>Расширенная аналитика</h2>
           <p>Раздел аналитики в разработке...</p>
         </div>
-      )}
+      )}}
 
-      {activeTab === "maps" && (
-        <MapsSection fullPage={true} />
-      )}
+      {{activeTab === "maps" && (
+        <MapsSection fullPage={{true}} />
+      )}}
 
-      {activeTab === "table" && (
+      {{activeTab === "table" && (
         <div className="card">
           <h2 style={{ marginBottom: "1rem", color: "#1e293b" }}>Таблица данных</h2>
           <div style={{ overflowX: "auto" }}>
@@ -505,24 +506,26 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {data.map(row => (
-                  <tr key={row.id} style={{ borderBottom: "1px solid #e2e8f0" }}>
-                    <td style={{ padding: "1rem" }}>{row.hybrid}</td>
-                    <td style={{ padding: "1rem", textAlign: "right", fontWeight: "600" }}>{row.yield} ц/га</td>
-                    <td style={{ padding: "1rem", textAlign: "right" }}>{row.oil}%</td>
-                    <td style={{ padding: "1rem" }}>{row.location}</td>
+                {{data.map(row => (
+                  <tr key={{row.id}} style={{ borderBottom: "1px solid #e2e8f0" }}>
+                    <td style={{ padding: "1rem" }}>{{row.hybrid}}</td>
+                    <td style={{ padding: "1rem", textAlign: "right", fontWeight: "600" }}>{{row.yield}} ц/га</td>
+                    <td style={{ padding: "1rem", textAlign: "right" }}>{{row.oil}}%</td>
+                    <td style={{ padding: "1rem" }}>{{row.location}}</td>
                   </tr>
-                ))}
+                ))}}
               </tbody>
             </table>
           </div>
         </div>
-      )}
+      )}}
     </div>
   );
-}'''
+}}'''
         
-        with open("src/components/Dashboard.jsx", "w") as f:
+        # Убеждаемся, что папка components существует
+        os.makedirs("src/components", exist_ok=True)
+        with open("src/components/Dashboard.jsx", "w", encoding='utf-8') as f:
             f.write(dashboard_jsx)
         
         # 3. Остальные компоненты
@@ -534,23 +537,23 @@ export default function KPISection({ data }) {
     {
       label: "Средняя урожайность",
       value: data.length ? (data.reduce((sum, row) => sum + row.yield, 0) / data.length).toFixed(1) + " ц/га" : "—",
-      icon: "[🌾]"
+      icon: "🌾"
     },
     {
       label: "Средняя масличность",
       value: data.filter(row => row.oil > 0).length ? 
         (data.filter(row => row.oil > 0).reduce((sum, row) => sum + row.oil, 0) / data.filter(row => row.oil > 0).length).toFixed(1) + "%" : "—",
-      icon: "[🫒]"
+      icon: "🫒"
     },
     {
       label: "Количество локаций",
       value: new Set(data.map(row => row.location)).size,
-      icon: "[📍]"
+      icon: "📍"
     },
     {
       label: "Количество гибридов",
       value: new Set(data.map(row => row.hybrid)).size,
-      icon: "[🧬]"
+      icon: "🧬"
     }
   ];
 
@@ -610,8 +613,9 @@ export default function FiltersPanel() {
             onChange={(e) => handleFilterChange("hybrid", e.target.value)}
           >
             <option value="">Все гибриды</option>
-            <option value="Подсолнечник-1">Подсолнечник-1</option>
-            <option value="Кукуруза-1">Кукуруза-1</option>
+            <option value="Подсолнечник">Подсолнечник</option>
+            <option value="Кукуруза">Кукуруза</option>
+            <option value="Соя">Соя</option>
           </select>
         </div>
         
@@ -623,34 +627,19 @@ export default function FiltersPanel() {
           >
             <option value="">Все годы</option>
             <option value="2023">2023</option>
-            <option value="2022">2022</option>
+            <option value="2024">2024</option>
           </select>
         </div>
         
         <div className="filter-group">
           <label>Локация</label>
-          <select 
+          <input 
+            type="text" 
             value={filters.location} 
             onChange={(e) => handleFilterChange("location", e.target.value)}
-          >
-            <option value="">Все локации</option>
-            <option value="Локация A">Локация A</option>
-            <option value="Локация B">Локация B</option>
-          </select>
+            placeholder="Введите локацию"
+          />
         </div>
-      </div>
-      
-      <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
-        <button className="btn-primary" style={{ background: "#4C73C1" }}>
-          Применить фильтры
-        </button>
-        <button 
-          className="btn-primary" 
-          style={{ background: "#64748b" }}
-          onClick={() => setFilters({ brand: "", hybrid: "", year: "", location: "" })}
-        >
-          Сбросить
-        </button>
       </div>
     </div>
   );
@@ -674,7 +663,7 @@ export default function MapsSection({ fullPage = false }) {
         gap: "1rem",
         color: "#2e7d32"
       }}>
-        <div style={{ fontSize: "3rem" }}>[🗺️]</div>
+        <div style={{ fontSize: "3rem" }}>🗺️</div>
         <div style={{ textAlign: "center" }}>
           <p style={{ fontSize: "1.2rem", fontWeight: "600", marginBottom: "0.5rem" }}>
             Интерактивная карта
@@ -707,7 +696,7 @@ export default function AnalyticsSection({ data }) {
         gap: "1rem",
         color: "#1565c0"
       }}>
-        <div style={{ fontSize: "3rem" }}>[📈]</div>
+        <div style={{ fontSize: "3rem" }}>📈</div>
         <div style={{ textAlign: "center" }}>
           <p style={{ fontSize: "1.2rem", fontWeight: "600", marginBottom: "0.5rem" }}>
             Графики и диаграммы
@@ -724,7 +713,7 @@ export default function AnalyticsSection({ data }) {
         }
         
         for component_name, component_code in components.items():
-            with open(f"src/components/{component_name}", "w") as f:
+            with open(f"src/components/{component_name}", "w", encoding='utf-8') as f:
                 f.write(component_code)
             print(f"> Created component: {component_name}")
         
@@ -748,140 +737,113 @@ export const RAYAGRO_COLORS = {
 
 // Настройки дашборда
 export const DASHBOARD_CONFIG = {
-  maxPointsOnMap: 1000,
-  defaultYearRange: [2015, 2025],
-  yieldThreshold: 30,
-  refreshInterval: 300000 // 5 минут
+  maxDataPoints: 1000,
+  refreshInterval: 30000,
+  defaultFilters: {
+    year: new Date().getFullYear(),
+    brand: "",
+    hybrid: ""
+  }
 };
 
-// Бренды и их цвета
-export const BRAND_COLORS = {
-  "Пионер": "#2563eb",
-  "Сингента": "#f59e0b",
-  "Лимагрен": "#10b981",
-  "КВС": "#ef4444",
-  "LG": "#8b5cf6"
+// API endpoints
+export const API_ENDPOINTS = {
+  data: "/api/data",
+  analytics: "/api/analytics",
+  export: "/api/export"
 };'''
         
-        with open("src/utils/constants.js", "w") as f:
+        with open("src/utils/constants.js", "w", encoding='utf-8') as f:
             f.write(constants_js)
         
         # utils/dataProcessing.js
         data_processing_js = '''// Функции для обработки данных
-export const processYieldData = (data) => {
-  return data.filter(item => item.yield > 0)
-    .sort((a, b) => b.yield - a.yield);
+export const processYieldData = (rawData) => {
+  return rawData.map(item => ({
+    ...item,
+    yield: parseFloat(item.yield) || 0,
+    oil: parseFloat(item.oil) || 0,
+    date: new Date(item.date)
+  }));
 };
 
-export const calculateStats = (data) => {
-  const yields = data.map(item => item.yield).filter(y => y > 0);
-  if (yields.length === 0) return { mean: 0, max: 0, min: 0 };
+export const calculateKPIs = (data) => {
+  if (!data.length) return {};
+  
+  const yields = data.map(d => d.yield).filter(y => y > 0);
+  const oils = data.map(d => d.oil).filter(o => o > 0);
   
   return {
-    mean: yields.reduce((a, b) => a + b, 0) / yields.length,
-    max: Math.max(...yields),
-    min: Math.min(...yields),
-    count: yields.length
+    avgYield: yields.length ? (yields.reduce((a, b) => a + b, 0) / yields.length).toFixed(1) : 0,
+    avgOil: oils.length ? (oils.reduce((a, b) => a + b, 0) / oils.length).toFixed(1) : 0,
+    totalLocations: new Set(data.map(d => d.location)).size,
+    totalHybrids: new Set(data.map(d => d.hybrid)).size
   };
 };
 
-export const groupByBrand = (data) => {
-  const groups = {};
-  data.forEach(item => {
-    if (!groups[item.brand]) groups[item.brand] = [];
-    groups[item.brand].push(item);
+export const filterData = (data, filters) => {
+  return data.filter(item => {
+    if (filters.brand && item.brand !== filters.brand) return false;
+    if (filters.hybrid && !item.hybrid.includes(filters.hybrid)) return false;
+    if (filters.year && item.year !== filters.year) return false;
+    if (filters.location && !item.location.toLowerCase().includes(filters.location.toLowerCase())) return false;
+    return true;
   });
-  return groups;
 };'''
         
-        with open("src/utils/dataProcessing.js", "w") as f:
+        with open("src/utils/dataProcessing.js", "w", encoding='utf-8') as f:
             f.write(data_processing_js)
         
-        # Пример данных
-        sample_data = '''ID,Hybrid,Brand,Year,Yield,Oil,Location,Lat,Lon
-1,Подсолнечник-1,Сингента,2023,28.5,45.2,Локация A,52.5,31.5
-2,Кукуруза-1,Пионер,2023,85.3,,Локация B,53.0,32.0
-3,Подсолнечник-2,Лимагрен,2023,32.1,48.7,Локация C,52.7,31.7'''
-        
-        with open("data/sample-data.csv", "w") as f:
-            f.write(sample_data)
-        
-        print("> Utilities and data files created")
+        print("> Created utility files")
         return True
     
     def create_documentation(self, issue_number):
         """Создает документацию проекта"""
         print(">> Creating documentation...")
         
+        # README.md
         readme_content = f'''# RayAgro Yield Dashboard
 
-## Расширенный дашборд урожайности с аналитикой
+Расширенный дашборд урожайности с аналитикой для агротехнических данных.
 
-### Создан автоматически агентом
-- **Issue**: #{issue_number}
-- **Дата создания**: {time.strftime('%Y-%m-%d %H:%M:%S')}
-- **Статус**: Активная разработка
+## Описание
 
-## Возможности
+Этот дашборд создан для анализа данных урожайности различных культур и гибридов. 
+Включает в себя интерактивные карты, графики и таблицы данных.
 
-### Визуализация данных
-- Интерактивные графики урожайности
-- Тепловые карты локаций испытаний
-- KPI показатели в реальном времени
+## Функциональность
 
-### Геоаналитика  
-- Карты испытаний с кластерами
-- Тепловые карты урожайности
-- Фильтрация по регионам
-
-### Аналитика
-- Сравнение гибридов и брендов
-- Статистический анализ
-- Тренды и прогнозы
-
-### Интерфейс
-- Адаптивный дизайн
-- Вкладки для разных разделов
-- Фильтры и настройки
+- 📊 **KPI показатели** - ключевые метрики урожайности
+- 🗺️ **Интерактивные карты** - визуализация локаций испытаний  
+- 📈 **Аналитика** - графики и диаграммы
+- 📋 **Таблицы данных** - детальная информация
+- 🔍 **Фильтрация** - поиск по различным параметрам
 
 ## Технологии
 
 - **Frontend**: React 18, Vite
-- **Графики**: Recharts
 - **Карты**: Leaflet, React-Leaflet
-- **Стили**: CSS3, Flexbox/Grid
-
-## Установка и запуск
-
-\\`\\`\\`bash
-# Установка зависимостей
-npm install
-
-# Запуск в режиме разработки
-npm run dev
-
-# Сборка для production
-npm run build
-\\`\\`\\`
+- **Графики**: Recharts
+- **Стили**: CSS3, Flexbox, Grid
 
 ## Структура проекта
 
-\\`\\`\\`
+```
 src/
-+-- components/     # React компоненты
-¦   +-- Dashboard.jsx      # Главный компонент
-¦   +-- KPISection.jsx     # KPI показатели
-¦   +-- FiltersPanel.jsx   # Панель фильтров
-¦   +-- MapsSection.jsx    # Раздел карт
-¦   L-- AnalyticsSection.jsx # Аналитика
-+-- utils/          # Вспомогательные функции
-¦   +-- constants.js       # Константы и настройки
-¦   L-- dataProcessing.js  # Обработка данных
-+-- styles/         # Стили
-¦   L-- index.css   # Основные стили
-+-- App.jsx         # Главный компонент приложения
-L-- main.jsx        # Точка входа
-\\`\\`\\`
+├── components/     # React компоненты
+│   ├── Dashboard.jsx        # Главный дашборд
+│   ├── KPISection.jsx      # KPI показатели
+│   ├── FiltersPanel.jsx    # Панель фильтров
+│   ├── MapsSection.jsx     # Карты
+│   └── AnalyticsSection.jsx # Аналитика
+├── utils/          # Вспомогательные функции
+│   ├── constants.js       # Константы и настройки
+│   └── dataProcessing.js  # Обработка данных
+├── styles/         # Стили
+│   └── index.css   # Основные стили
+├── App.jsx         # Главный компонент приложения
+└── main.jsx        # Точка входа
+```
 
 ## Разработка
 
@@ -893,62 +855,13 @@ L-- main.jsx        # Точка входа
 - **Репозиторий**: https://github.com/ostrovde/dashboard-new
 - **Автоматизация**: GitHub Actions + Python Agent
 
----
+----
 
 *Создано с помощью автономного агента разработки*
 '''
         
         with open("README.md", "w", encoding='utf-8') as f:
             f.write(readme_content)
-        
-        # Файл с планом развития
-        roadmap_content = f'''# План развития дашборда
-
-## Создано: {time.strftime('%Y-%m-%d %H:%M:%S')}
-## Issue: #{issue_number}
-
-## Выполнено
-- [x] Базовая структура React проекта
-- [x] Компонентная архитектура
-- [x] Система вкладок
-- [x] KPI показатели
-- [x] Панель фильтров
-- [x] Адаптивный дизайн
-- [x] Интеграция зависимостей (Recharts, Leaflet)
-
-## В разработке
-- [ ] Интеграция реальных данных
-- [ ] Интерактивные карты Leaflet
-- [ ] Графики Recharts
-- [ ] Фильтрация данных
-- [ ] Экспорт отчетов
-
-## Планы на будущее
-
-### Ближайшие задачи
-1. **Интеграция карт** - добавить Leaflet компоненты
-2. **Графики** - внедрить Recharts для визуализации
-3. **Загрузка данных** - подключить CSV/API
-4. **Расширенные фильтры** - добавить больше параметров
-
-### Долгосрочные цели
-- Machine learning прогнозы
-- Real-time обновления
-- Мобильное приложение
-- Интеграция с Google Sheets
-
-## Приоритеты
-
-1. **Высокий**: Функциональные карты и графики
-2. **Средний**: Расширенная аналитика
-3. **Низкий**: Дополнительные визуализации
-
----
-*План будет обновляться по мере развития проекта*
-'''
-        
-        with open("ROADMAP.md", "w", encoding='utf-8') as f:
-            f.write(roadmap_content)
         
         print("> Documentation created")
         return True
@@ -1023,28 +936,36 @@ L-- main.jsx        # Точка входа
             print(">>> Dashboard structure completed!")
             
             # Коммитим изменения
-            subprocess.run(["git", "add", "."], check=True)
-            subprocess.run(["git", "commit", "-m", f"feat: create advanced dashboard for #{issue_number}"], check=True)
-            
-            # Пушим в репозиторий
-            subprocess.run(["git", "push", "origin", branch_name], check=True)
-            print(f">>> Pushed to branch: {branch_name}")
+            try:
+                subprocess.run(["git", "add", "."], check=True)
+                subprocess.run(["git", "commit", "-m", f"feat: create advanced dashboard for #{issue_number}"], check=True)
+                
+                # Пушим в репозиторий
+                subprocess.run(["git", "push", "origin", branch_name], check=True)
+                print(f">>> Pushed to branch: {branch_name}")
+            except subprocess.CalledProcessError as e:
+                print(f">>> Error with git operations: {e}")
+                return False
             
             # Создаем PR
-            pr = self.create_pr(issue_number, branch_name)
-            print(f">>> Created PR: {pr.get('html_url', 'URL not available')}")
+            try:
+                pr = self.create_pr(issue_number, branch_name)
+                print(f">>> Created PR: {pr.get('html_url', 'URL not available')}")
+            except Exception as e:
+                print(f">>> Error creating PR: {e}")
+                return False
             
             print("\\n" + "="*50)
-            print("[✅] ADVANCED DASHBOARD CREATED SUCCESSFULLY!")
+            print("[SUCCESS] ADVANCED DASHBOARD CREATED SUCCESSFULLY!")
             print("="*50)
-            print(f"[📊] Dashboard structure ready for issue #{issue_number}")
-            print(f"[🌐] PR: {pr.get('html_url', 'Check repository')}")
-            print(f"[🔄] Branch: {branch_name}")
+            print(f"[DASHBOARD] Dashboard structure ready for issue #{issue_number}")
+            print(f"[PR] PR: {pr.get('html_url', 'Check repository')}")
+            print(f"[BRANCH] Branch: {branch_name}")
             print("="*50)
             
             return True
         else:
-            print("[❌] Dashboard creation failed!")
+            print("[ERROR] Dashboard creation failed!")
             return False
 
 # Запуск агента
