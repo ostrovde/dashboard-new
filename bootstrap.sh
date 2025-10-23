@@ -89,6 +89,7 @@ fix_origin(){
 }
 
 push_with_token(){
+  fix_origin
   local BR="${1:-${NEW_BRANCH:-$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)}}"
   if [ -n "${GITHUB_ACTIONS:-}" ] && [ -n "${GITHUB_TOKEN:-}" ]; then
     echo "::add-mask::$GITHUB_TOKEN"
@@ -110,6 +111,7 @@ esac
 
 # --- safe push helper (uses REPO_EFFECTIVE) ---
 push_with_token(){
+  fix_origin
   local BR="${1:-${NEW_BRANCH:-$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)}}"
   if [ -n "${GITHUB_ACTIONS:-}" ] && [ -n "${GITHUB_TOKEN:-}" ]; then
     echo "::add-mask::$GITHUB_TOKEN"
@@ -141,6 +143,7 @@ repo_effective(){
 }
 
 push_with_token(){
+  fix_origin
 
   local BR="${NEW_BRANCH:-$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo)}"
 
