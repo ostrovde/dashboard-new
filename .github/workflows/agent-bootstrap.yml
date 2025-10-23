@@ -9,7 +9,7 @@ on:
       repo:
         description: "owner/repo (если пусто — возьмём текущий)"
         required: false
-        default: ""   # НЕЛЬЗЯ использовать ${{ github.repository }} здесь
+        default: ""
 
 permissions:
   actions: write
@@ -26,17 +26,18 @@ jobs:
           persist-credentials: true
 
       - name: GH version & auth status
-      - name: Configure git identity
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --global --list | sed -n 's/^user\./&/p'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh --version
           gh auth status || echo "$GH_TOKEN" | gh auth login --with-token
           gh auth status -t || true
+
+      - name: Configure git identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global --list | sed -n 's/^user\./&/p'
 
       - name: Ensure bootstrap executable
         run: chmod +x ./bootstrap.sh
@@ -48,7 +49,6 @@ jobs:
           REPO_INPUT: ${{ inputs.repo }}
         run: |
           REPO="$REPO_INPUT"
-          # если инпут пуст — берём текущий репозиторий из контекста раннера
           if [ -z "$REPO" ]; then REPO="$GITHUB_REPOSITORY"; fi
           echo "Using repo: $REPO"
           ./bootstrap.sh "${{ inputs.issue_id }}" "$REPO"
