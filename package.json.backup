@@ -10,9 +10,7 @@
     "preview": "vite preview",
     "diag": "python3 scripts/diagnostics.py",
     "routes:check": "python3 scripts/vite_validate_routes.py",
-    "smoke": "node scripts/smoke.cjs",
-    "build+smoke": "npm run build && npm run smoke",
-    "postbuild": "npm run diag && npm run routes:check"
+    "smoke": "node scripts/smoke.cjs"
   },
   "dependencies": {
     "leaflet": "^1.9.4",
