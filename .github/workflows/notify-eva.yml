@@ -1,41 +1,25 @@
 name: Notify Eva (Telegram)
+
 on:
-  pull_request:
-    types: [opened, ready_for_review, review_requested, closed]
   workflow_run:
-    workflows: ["Agent Bootstrap"]
+    workflows: [CI, Smoke]
     types: [completed]
+
 jobs:
   notify:
-    if: ${{ github.event_name == 'pull_request' || github.event.workflow_run.conclusion != '' }}
+    if: ${{ secrets.TELEGRAM_TOKEN != '' && secrets.TELEGRAM_CHAT_ID != '' }}
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
-      - name: Build message
-        id: msg
-        run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            PR_NUM="${{ github.event.pull_request.number }}"
-            PR_TITLE="${{ github.event.pull_request.title }}"
-            PR_STATE="${{ github.event.action }}"
-            URL="${{ github.event.pull_request.html_url }}"
-            printf "text=PR #%s: %s — %s\n%s" "$PR_NUM" "$PR_TITLE" "$PR_STATE" "$URL" >> $GITHUB_OUTPUT
-          else
-            CONCL="${{ github.event.workflow_run.conclusion }}"
-            URL="${{ github.event.workflow_run.html_url }}"
-            printf "text=Agent Bootstrap finished: %s\n%s" "$CONCL" "$URL" >> $GITHUB_OUTPUT
-          fi
-      - name: Send to Telegram Eva
+      - name: Send Telegram
         env:
-          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          TEXT: ${{ steps.msg.outputs.text }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          PR_URL: ${{ github.event.workflow_run.html_url }}
+          REPO: ${{ github.repository }}
+          STATUS: ${{ github.event.workflow_run.conclusion }}
         run: |
-          if [[ -z "$BOT_TOKEN" || -z "$CHAT_ID" ]]; then
-            echo "Telegram secrets missing, skip."
-            exit 0
-          fi
-          curl -sS -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
-            -d "chat_id=${CHAT_ID}" \
-            --data-urlencode "text=${TEXT}" \
-            -d "disable_web_page_preview=true" \
-            -d "parse_mode=HTML" >/dev/null
+          curl -s --fail "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            -d parse_mode="HTML" \
+            -d text="🧪 <b>${REPO}</b> • ${STATUS}\n${PR_URL}" || true
