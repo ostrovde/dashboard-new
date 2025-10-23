@@ -50,6 +50,8 @@ fi
     git config user.email "${GIT_AUTHOR_EMAIL:-41898282+github-actions[bot]@users.noreply.github.com}"
   fi
   git push -u origin HEAD
+echo "::add-mask::$GITHUB_TOKEN"
+git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git"
 fi
 
 echo "NEXT: follow agent_spec.yaml workflow"
