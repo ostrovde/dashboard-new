@@ -104,7 +104,8 @@ git checkout -b "$BRANCH" "origin/$DEFAULT_BRANCH" 2>/dev/null || git checkout -
 
   fi
 
-# --- CI auth for pushes ---if [ -n "$GITHUB_ACTIONS" ]; then  echo "::add-mask::$GITHUB_TOKEN"  REPO_EFFECTIVE="${2:-${REPO:-$GITHUB_REPOSITORY}}"  if [ -z "$REPO_EFFECTIVE" ]; then echo "REPO_EFFECTIVE empty; cannot configure remote" >&2; exit 1; fi  git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO_EFFECTIVE}.git"  echo "[debug] remotes after set-url:"; git remote -vfi# --- end CI auth for pushes ---
+# --- CI auth for pushes ---if [ -n "$GITHUB_ACTIONS" ]; then  echo "::add-mask::$GITHUB_TOKEN"  REPO_EFFECTIVE="${2:-${REPO:-$GITHUB_REPOSITORY}}"  if [ -z "$REPO_EFFECTIVE" ]; then echo "REPO_EFFECTIVE empty; cannot configure remote" >&2; exit 1; fi  git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO_EFFECTIVE}.git"  echo "[debug] remotes after set-url:"; git remote -vfi
+# --- end CI auth for pushes ---
 
   git push -u origin HEAD
 

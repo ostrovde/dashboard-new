@@ -26,3 +26,6 @@ dist-ssr
 .githooks/
 *.bak.*
 data/*.csv
+
+# local backup
+bootstrap.sh.bak
