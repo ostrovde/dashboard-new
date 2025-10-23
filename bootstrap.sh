@@ -1,4 +1,28 @@
 #!/usr/bin/env bash
+# --- begin: robust origin fixer ---
+fix_origin(){
+  # Определяем NWO (owner/repo). Берём уже вычисленный REPO_EFFECTIVE, иначе REPO, иначе GITHUB_REPOSITORY
+  local NWO="${REPO_EFFECTIVE:-${REPO:-$GITHUB_REPOSITORY}}"
+  if [ -z "$NWO" ] || [ "$NWO" = "origin" ]; then
+    echo "[bootstrap] Bad repo value (NWO='$NWO')" >&2
+    return 1
+  fi
+
+  local want="https://github.com/${NWO}.git"
+  local cur
+  cur="$(git remote get-url origin 2>/dev/null || true)"
+
+  # Если origin пустой, указывает на /origin.git, имеет хвостовой слэш или просто не наш repo — чиним.
+  if [ -z "$cur" ] || ! printf "%s" "$cur" | grep -Eq "github\.com/${NWO}(\.git)?/?$"; then
+    if [ -n "$GITHUB_ACTIONS" ] && [ -n "$GITHUB_TOKEN" ]; then
+      echo "::add-mask::$GITHUB_TOKEN"
+      git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${NWO}.git"
+    else
+      git remote set-url origin "$want"
+    fi
+  fi
+}
+# --- end: robust origin fixer ---
 
 # === hard guard for origin url & safe push ===
 REPO_EFFECTIVE="${2:-${REPO:-$GITHUB_REPOSITORY}}"
@@ -39,7 +63,7 @@ push_with_token(){
     echo "::add-mask::$GITHUB_TOKEN"
     fix_origin
   fi
-  # если origin внезапно стал https://github.com/origin.git — починим
+  # если origin внезапно стал https://github.com/${REPO_EFFECTIVE:-${REPO:-$GITHUB_REPOSITORY}}.git — починим
   if git remote get-url origin 2>/dev/null | grep -q "/origin\.git$"; then
     fix_origin
   fi
