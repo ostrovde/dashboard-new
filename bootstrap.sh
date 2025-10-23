@@ -1,4 +1,28 @@
 #!/usr/bin/env bash
+
+# === hard guard for origin url & safe push ===
+REPO_EFFECTIVE="${2:-${REPO:-$GITHUB_REPOSITORY}}"
+case "$REPO_EFFECTIVE" in */*) ;; ""|origin) echo "[bootstrap] Bad REPO_EFFECTIVE=\"$REPO_EFFECTIVE\"" >&2; exit 1;; esac
+SAFE_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO_EFFECTIVE}.git"
+
+fix_origin(){
+  local cur; cur=$(git remote get-url origin 2>/dev/null || echo "")
+  if [ -z "$cur" ] || echo "$cur" | grep -qE "/origin\.git$"; then
+    fix_origin
+  fi
+}
+
+push_with_token(){
+  local BR="${1:-${NEW_BRANCH:-$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)}}"
+  if [ -n "${GITHUB_ACTIONS:-}" ] && [ -n "${GITHUB_TOKEN:-}" ]; then
+    echo "::add-mask::$GITHUB_TOKEN"
+  fi
+  fix_origin
+  printf "[bootstrap] Пушим ветку: %s → origin\n" "$BR" >&2
+  git remote -v >&2
+  fix_origin; git push -u origin "$BR"
+}
+# === end guard ===
 set -euo pipefail
 
 # --- stable repo detection ---
@@ -13,15 +37,15 @@ push_with_token(){
   local BR="${1:-${NEW_BRANCH:-$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)}}"
   if [ -n "${GITHUB_ACTIONS:-}" ] && [ -n "${GITHUB_TOKEN:-}" ]; then
     echo "::add-mask::$GITHUB_TOKEN"
-    git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO_EFFECTIVE}.git"
+    fix_origin
   fi
   # если origin внезапно стал https://github.com/origin.git — починим
   if git remote get-url origin 2>/dev/null | grep -q "/origin\.git$"; then
-    git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO_EFFECTIVE}.git"
+    fix_origin
   fi
   printf "[bootstrap] Пушим ветку: %s → origin\n" "$BR" >&2
   git remote -v >&2
-  git push -u origin "$BR"
+  fix_origin; git push -u origin "$BR"
 }
 
 # --- helpers (auto) ---
@@ -52,13 +76,13 @@ push_with_token(){
 
     echo "::add-mask::$GITHUB_TOKEN"
 
-    git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${NWO}.git"
+    fix_origin
 
   fi
 
   log "Пушим ветку: ${BR} → origin"
 
-  git push -u origin "$BR"
+  fix_origin; git push -u origin "$BR"
 
 }
 
@@ -104,10 +128,10 @@ git checkout -b "$BRANCH" "origin/$DEFAULT_BRANCH" 2>/dev/null || git checkout -
 
   fi
 
-# --- CI auth for pushes ---if [ -n "$GITHUB_ACTIONS" ]; then  echo "::add-mask::$GITHUB_TOKEN"  REPO_EFFECTIVE="${2:-${REPO:-$GITHUB_REPOSITORY}}"  if [ -z "$REPO_EFFECTIVE" ]; then echo "REPO_EFFECTIVE empty; cannot configure remote" >&2; exit 1; fi  git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO_EFFECTIVE}.git"  echo "[debug] remotes after set-url:"; git remote -vfi
+# --- CI auth for pushes ---if [ -n "$GITHUB_ACTIONS" ]; then  echo "::add-mask::$GITHUB_TOKEN"  REPO_EFFECTIVE="${2:-${REPO:-$GITHUB_REPOSITORY}}"  if [ -z "$REPO_EFFECTIVE" ]; then echo "REPO_EFFECTIVE empty; cannot configure remote" >&2; exit 1; fi  fix_origin
 # --- end CI auth for pushes ---
 
-  git push -u origin HEAD
+  fix_origin; git push -u origin HEAD
 
 echo "::add-mask::$GITHUB_TOKEN"
 
