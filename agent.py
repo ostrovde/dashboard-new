@@ -27,10 +27,10 @@ class Agent:
         return response.json()
     
     def create_project_structure(self):
-        """Создает полную структуру проекта для дашборда"""
+        """Г‘Г®Г§Г¤Г ГҐГІ ГЇГ®Г«Г­ГіГѕ Г±ГІГ°ГіГЄГІГіГ°Гі ГЇГ°Г®ГҐГЄГІГ  Г¤Г«Гї Г¤Г ГёГЎГ®Г°Г¤Г """
         print("??? Creating project structure...")
         
-        # Основные папки
+        # ГЋГ±Г­Г®ГўГ­Г»ГҐ ГЇГ ГЇГЄГЁ
         folders = [
             'src/components',
             'src/utils', 
@@ -47,7 +47,7 @@ class Agent:
         return True
     
     def create_package_json(self):
-        """Создает или обновляет package.json с нужными зависимостями"""
+        """Г‘Г®Г§Г¤Г ГҐГІ ГЁГ«ГЁ Г®ГЎГ­Г®ГўГ«ГїГҐГІ package.json Г± Г­ГіГ¦Г­Г»Г¬ГЁ Г§Г ГўГЁГ±ГЁГ¬Г®Г±ГІГїГ¬ГЁ"""
         print("?? Configuring dependencies...")
         
         package_data = {
@@ -82,7 +82,7 @@ class Agent:
         return True
     
     def create_main_files(self, issue_number):
-        """Создает основные файлы дашборда"""
+        """Г‘Г®Г§Г¤Г ГҐГІ Г®Г±Г­Г®ГўГ­Г»ГҐ ГґГ Г©Г«Г» Г¤Г ГёГЎГ®Г°Г¤Г """
         print("?? Creating main application files...")
         
         # 1. index.html
@@ -326,17 +326,17 @@ main {
         return True
     
     def create_react_components(self, issue_number):
-        """Создает React компоненты для дашборда"""
+        """Г‘Г®Г§Г¤Г ГҐГІ React ГЄГ®Г¬ГЇГ®Г­ГҐГ­ГІГ» Г¤Г«Гї Г¤Г ГёГЎГ®Г°Г¤Г """
         print("?? Creating React components...")
         
-        # 1. App.jsx - главный компонент
+        # 1. App.jsx - ГЈГ«Г ГўГ­Г»Г© ГЄГ®Г¬ГЇГ®Г­ГҐГ­ГІ
         app_jsx = f'''import React, {{ useState, useEffect }} from "react";
 import Dashboard from "./components/Dashboard.jsx";
 import "./index.css";
 
 function updateData() {{
   console.log("Updating data from Google Sheets...");
-  alert("Данные обновляются из Google Sheets!");
+  alert("Г„Г Г­Г­Г»ГҐ Г®ГЎГ­Г®ГўГ«ГїГѕГІГ±Гї ГЁГ§ Google Sheets!");
 }}
 
 export default function App() {{
@@ -349,16 +349,16 @@ export default function App() {{
           width: "100%"
         }}>
           <h1>RayAgro Yield Dashboard</h1>
-          <p className="app-sub">Расширенный дашборд урожайности с аналитикой</p>
+          <p className="app-sub">ГђГ Г±ГёГЁГ°ГҐГ­Г­Г»Г© Г¤Г ГёГЎГ®Г°Г¤ ГіГ°Г®Г¦Г Г©Г­Г®Г±ГІГЁ Г± Г Г­Г Г«ГЁГІГЁГЄГ®Г©</p>
           <div className="header-actions">
             <button onClick={{updateData}} className="btn-primary">
-              ?? Обновить данные
+              ?? ГЋГЎГ­Г®ГўГЁГІГј Г¤Г Г­Г­Г»ГҐ
             </button>
             <button className="btn-primary">
-              ?? Экспорт отчетов
+              ?? ГќГЄГ±ГЇГ®Г°ГІ Г®ГІГ·ГҐГІГ®Гў
             </button>
             <button className="btn-primary">
-              ?? Настройки
+              ?? ГЌГ Г±ГІГ°Г®Г©ГЄГЁ
             </button>
           </div>
         </div>
@@ -378,7 +378,7 @@ export default function App() {{
           margin: "0 auto",
           opacity: 0.8
         }}>
-          <p>?? RayAgro Yield Dashboard • Создан агентом для Issue #{issue_number}</p>
+          <p>?? RayAgro Yield Dashboard В• Г‘Г®Г§Г¤Г Г­ Г ГЈГҐГ­ГІГ®Г¬ Г¤Г«Гї Issue #{issue_number}</p>
           <p style={{ fontSize: "0.9rem", marginTop: "0.5rem" }}>
             {time.strftime('%Y-%m-%d %H:%M:%S')}
           </p>
@@ -391,7 +391,7 @@ export default function App() {{
         with open("src/App.jsx", "w") as f:
             f.write(app_jsx)
         
-        # 2. Dashboard.jsx - основной компонент дашборда
+        # 2. Dashboard.jsx - Г®Г±Г­Г®ГўГ­Г®Г© ГЄГ®Г¬ГЇГ®Г­ГҐГ­ГІ Г¤Г ГёГЎГ®Г°Г¤Г 
         dashboard_jsx = '''import React, { useState, useEffect } from "react";
 import KPISection from "./components/KPISection.jsx";
 import FiltersPanel from "./components/FiltersPanel.jsx";
@@ -404,22 +404,22 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Имитация загрузки данных
+    // Г€Г¬ГЁГІГ Г¶ГЁГї Г§Г ГЈГ°ГіГ§ГЄГЁ Г¤Г Г­Г­Г»Гµ
     setTimeout(() => {
       setData([
-        { id: 1, hybrid: "Подсолнечник-1", yield: 28.5, oil: 45.2, location: "Локация A" },
-        { id: 2, hybrid: "Кукуруза-1", yield: 85.3, oil: 0, location: "Локация B" },
-        { id: 3, hybrid: "Подсолнечник-2", yield: 32.1, oil: 48.7, location: "Локация C" }
+        { id: 1, hybrid: "ГЏГ®Г¤Г±Г®Г«Г­ГҐГ·Г­ГЁГЄ-1", yield: 28.5, oil: 45.2, location: "Г‹Г®ГЄГ Г¶ГЁГї A" },
+        { id: 2, hybrid: "ГЉГіГЄГіГ°ГіГ§Г -1", yield: 85.3, oil: 0, location: "Г‹Г®ГЄГ Г¶ГЁГї B" },
+        { id: 3, hybrid: "ГЏГ®Г¤Г±Г®Г«Г­ГҐГ·Г­ГЁГЄ-2", yield: 32.1, oil: 48.7, location: "Г‹Г®ГЄГ Г¶ГЁГї C" }
       ]);
       setLoading(false);
     }, 1000);
   }, []);
 
   const tabs = [
-    { id: "overview", label: "?? Обзор", icon: "??" },
-    { id: "analytics", label: "?? Аналитика", icon: "??" },
-    { id: "maps", label: "??? Карты", icon: "???" },
-    { id: "table", label: "?? Таблица", icon: "??" }
+    { id: "overview", label: "?? ГЋГЎГ§Г®Г°", icon: "??" },
+    { id: "analytics", label: "?? ГЂГ­Г Г«ГЁГІГЁГЄГ ", icon: "??" },
+    { id: "maps", label: "??? ГЉГ Г°ГІГ»", icon: "???" },
+    { id: "table", label: "?? Г’Г ГЎГ«ГЁГ¶Г ", icon: "??" }
   ];
 
   if (loading) {
@@ -434,7 +434,7 @@ export default function Dashboard() {
       }}>
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>??</div>
-          <p>Загрузка расширенного дашборда...</p>
+          <p>Г‡Г ГЈГ°ГіГ§ГЄГ  Г°Г Г±ГёГЁГ°ГҐГ­Г­Г®ГЈГ® Г¤Г ГёГЎГ®Г°Г¤Г ...</p>
         </div>
       </div>
     );
@@ -442,7 +442,7 @@ export default function Dashboard() {
 
   return (
     <div>
-      {/* Вкладки */}
+      {/* Г‚ГЄГ«Г Г¤ГЄГЁ */}
       <div className="tabs">
         {tabs.map(tab => (
           <button
@@ -456,20 +456,20 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Панель фильтров */}
+      {/* ГЏГ Г­ГҐГ«Гј ГґГЁГ«ГјГІГ°Г®Гў */}
       <FiltersPanel />
 
-      {/* KPI показатели */}
+      {/* KPI ГЇГ®ГЄГ Г§Г ГІГҐГ«ГЁ */}
       <KPISection data={data} />
 
-      {/* Контент вкладок */}
+      {/* ГЉГ®Г­ГІГҐГ­ГІ ГўГЄГ«Г Г¤Г®ГЄ */}
       {activeTab === "overview" && (
         <div>
           <div className="card">
-            <h2 style={{ marginBottom: "1rem", color: "#1e293b" }}>?? Обзор производительности</h2>
+            <h2 style={{ marginBottom: "1rem", color: "#1e293b" }}>?? ГЋГЎГ§Г®Г° ГЇГ°Г®ГЁГ§ГўГ®Г¤ГЁГІГҐГ«ГјГ­Г®Г±ГІГЁ</h2>
             <p style={{ color: "#64748b", lineHeight: "1.6" }}>
-              Добро пожаловать в расширенный дашборд урожайности RayAgro. 
-              Здесь вы можете анализировать данные по гибридам, брендам и локациям.
+              Г„Г®ГЎГ°Г® ГЇГ®Г¦Г Г«Г®ГўГ ГІГј Гў Г°Г Г±ГёГЁГ°ГҐГ­Г­Г»Г© Г¤Г ГёГЎГ®Г°Г¤ ГіГ°Г®Г¦Г Г©Г­Г®Г±ГІГЁ RayAgro. 
+              Г‡Г¤ГҐГ±Гј ГўГ» Г¬Г®Г¦ГҐГІГҐ Г Г­Г Г«ГЁГ§ГЁГ°Г®ГўГ ГІГј Г¤Г Г­Г­Г»ГҐ ГЇГ® ГЈГЁГЎГ°ГЁГ¤Г Г¬, ГЎГ°ГҐГ­Г¤Г Г¬ ГЁ Г«Г®ГЄГ Г¶ГЁГїГ¬.
             </p>
           </div>
           
@@ -482,8 +482,8 @@ export default function Dashboard() {
 
       {activeTab === "analytics" && (
         <div className="card">
-          <h2 style={{ marginBottom: "1rem", color: "#1e293b" }}>?? Расширенная аналитика</h2>
-          <p>Раздел аналитики в разработке...</p>
+          <h2 style={{ marginBottom: "1rem", color: "#1e293b" }}>?? ГђГ Г±ГёГЁГ°ГҐГ­Г­Г Гї Г Г­Г Г«ГЁГІГЁГЄГ </h2>
+          <p>ГђГ Г§Г¤ГҐГ« Г Г­Г Г«ГЁГІГЁГЄГЁ Гў Г°Г Г§Г°Г ГЎГ®ГІГЄГҐ...</p>
         </div>
       )}
 
@@ -493,22 +493,22 @@ export default function Dashboard() {
 
       {activeTab === "table" && (
         <div className="card">
-          <h2 style={{ marginBottom: "1rem", color: "#1e293b" }}>?? Таблица данных</h2>
+          <h2 style={{ marginBottom: "1rem", color: "#1e293b" }}>?? Г’Г ГЎГ«ГЁГ¶Г  Г¤Г Г­Г­Г»Гµ</h2>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
                 <tr style={{ background: "#f8fafc" }}>
-                  <th style={{ padding: "1rem", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Гибрид</th>
-                  <th style={{ padding: "1rem", textAlign: "right", borderBottom: "1px solid #e2e8f0" }}>Урожайность</th>
-                  <th style={{ padding: "1rem", textAlign: "right", borderBottom: "1px solid #e2e8f0" }}>Масличность</th>
-                  <th style={{ padding: "1rem", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Локация</th>
+                  <th style={{ padding: "1rem", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>ГѓГЁГЎГ°ГЁГ¤</th>
+                  <th style={{ padding: "1rem", textAlign: "right", borderBottom: "1px solid #e2e8f0" }}>Г“Г°Г®Г¦Г Г©Г­Г®Г±ГІГј</th>
+                  <th style={{ padding: "1rem", textAlign: "right", borderBottom: "1px solid #e2e8f0" }}>ГЊГ Г±Г«ГЁГ·Г­Г®Г±ГІГј</th>
+                  <th style={{ padding: "1rem", textAlign: "left", borderBottom: "1px solid #e2e8f0" }}>Г‹Г®ГЄГ Г¶ГЁГї</th>
                 </tr>
               </thead>
               <tbody>
                 {data.map(row => (
                   <tr key={row.id} style={{ borderBottom: "1px solid #e2e8f0" }}>
                     <td style={{ padding: "1rem" }}>{row.hybrid}</td>
-                    <td style={{ padding: "1rem", textAlign: "right", fontWeight: "600" }}>{row.yield} ц/га</td>
+                    <td style={{ padding: "1rem", textAlign: "right", fontWeight: "600" }}>{row.yield} Г¶/ГЈГ </td>
                     <td style={{ padding: "1rem", textAlign: "right" }}>{row.oil}%</td>
                     <td style={{ padding: "1rem" }}>{row.location}</td>
                   </tr>
@@ -525,30 +525,30 @@ export default function Dashboard() {
         with open("src/components/Dashboard.jsx", "w") as f:
             f.write(dashboard_jsx)
         
-        # 3. Остальные компоненты
+        # 3. ГЋГ±ГІГ Г«ГјГ­Г»ГҐ ГЄГ®Г¬ГЇГ®Г­ГҐГ­ГІГ»
         components = {
             'KPISection.jsx': '''import React from "react";
 
 export default function KPISection({ data }) {
   const kpis = [
     {
-      label: "?? Средняя урожайность",
-      value: data.length ? (data.reduce((sum, row) => sum + row.yield, 0) / data.length).toFixed(1) + " ц/га" : "—",
+      label: "?? Г‘Г°ГҐГ¤Г­ГїГї ГіГ°Г®Г¦Г Г©Г­Г®Г±ГІГј",
+      value: data.length ? (data.reduce((sum, row) => sum + row.yield, 0) / data.length).toFixed(1) + " Г¶/ГЈГ " : "В—",
       icon: "??"
     },
     {
-      label: "??? Средняя масличность",
+      label: "??? Г‘Г°ГҐГ¤Г­ГїГї Г¬Г Г±Г«ГЁГ·Г­Г®Г±ГІГј",
       value: data.filter(row => row.oil > 0).length ? 
-        (data.filter(row => row.oil > 0).reduce((sum, row) => sum + row.oil, 0) / data.filter(row => row.oil > 0).length).toFixed(1) + "%" : "—",
+        (data.filter(row => row.oil > 0).reduce((sum, row) => sum + row.oil, 0) / data.filter(row => row.oil > 0).length).toFixed(1) + "%" : "В—",
       icon: "??"
     },
     {
-      label: "?? Количество локаций",
+      label: "?? ГЉГ®Г«ГЁГ·ГҐГ±ГІГўГ® Г«Г®ГЄГ Г¶ГЁГ©",
       value: new Set(data.map(row => row.location)).size,
       icon: "??"
     },
     {
-      label: "?? Количество гибридов",
+      label: "?? ГЉГ®Г«ГЁГ·ГҐГ±ГІГўГ® ГЈГЁГЎГ°ГЁГ¤Г®Гў",
       value: new Set(data.map(row => row.hybrid)).size,
       icon: "??"
     }
@@ -588,68 +588,68 @@ export default function FiltersPanel() {
 
   return (
     <div className="card">
-      <h3 style={{ marginBottom: "1rem", color: "#1e293b" }}>?? Фильтры данных</h3>
+      <h3 style={{ marginBottom: "1rem", color: "#1e293b" }}>?? Г”ГЁГ«ГјГІГ°Г» Г¤Г Г­Г­Г»Гµ</h3>
       <div className="filters-grid">
         <div className="filter-group">
-          <label>Бренд</label>
+          <label>ГЃГ°ГҐГ­Г¤</label>
           <select 
             value={filters.brand} 
             onChange={(e) => handleFilterChange("brand", e.target.value)}
           >
-            <option value="">Все бренды</option>
-            <option value="Пионер">Пионер</option>
-            <option value="Сингента">Сингента</option>
-            <option value="Лимагрен">Лимагрен</option>
+            <option value="">Г‚Г±ГҐ ГЎГ°ГҐГ­Г¤Г»</option>
+            <option value="ГЏГЁГ®Г­ГҐГ°">ГЏГЁГ®Г­ГҐГ°</option>
+            <option value="Г‘ГЁГ­ГЈГҐГ­ГІГ ">Г‘ГЁГ­ГЈГҐГ­ГІГ </option>
+            <option value="Г‹ГЁГ¬Г ГЈГ°ГҐГ­">Г‹ГЁГ¬Г ГЈГ°ГҐГ­</option>
           </select>
         </div>
         
         <div className="filter-group">
-          <label>Гибрид</label>
+          <label>ГѓГЁГЎГ°ГЁГ¤</label>
           <select 
             value={filters.hybrid} 
             onChange={(e) => handleFilterChange("hybrid", e.target.value)}
           >
-            <option value="">Все гибриды</option>
-            <option value="Подсолнечник-1">Подсолнечник-1</option>
-            <option value="Кукуруза-1">Кукуруза-1</option>
+            <option value="">Г‚Г±ГҐ ГЈГЁГЎГ°ГЁГ¤Г»</option>
+            <option value="ГЏГ®Г¤Г±Г®Г«Г­ГҐГ·Г­ГЁГЄ-1">ГЏГ®Г¤Г±Г®Г«Г­ГҐГ·Г­ГЁГЄ-1</option>
+            <option value="ГЉГіГЄГіГ°ГіГ§Г -1">ГЉГіГЄГіГ°ГіГ§Г -1</option>
           </select>
         </div>
         
         <div className="filter-group">
-          <label>Год</label>
+          <label>ГѓГ®Г¤</label>
           <select 
             value={filters.year} 
             onChange={(e) => handleFilterChange("year", e.target.value)}
           >
-            <option value="">Все годы</option>
+            <option value="">Г‚Г±ГҐ ГЈГ®Г¤Г»</option>
             <option value="2023">2023</option>
             <option value="2022">2022</option>
           </select>
         </div>
         
         <div className="filter-group">
-          <label>Локация</label>
+          <label>Г‹Г®ГЄГ Г¶ГЁГї</label>
           <select 
             value={filters.location} 
             onChange={(e) => handleFilterChange("location", e.target.value)}
           >
-            <option value="">Все локации</option>
-            <option value="Локация A">Локация A</option>
-            <option value="Локация B">Локация B</option>
+            <option value="">Г‚Г±ГҐ Г«Г®ГЄГ Г¶ГЁГЁ</option>
+            <option value="Г‹Г®ГЄГ Г¶ГЁГї A">Г‹Г®ГЄГ Г¶ГЁГї A</option>
+            <option value="Г‹Г®ГЄГ Г¶ГЁГї B">Г‹Г®ГЄГ Г¶ГЁГї B</option>
           </select>
         </div>
       </div>
       
       <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
         <button className="btn-primary" style={{ background: "#4C73C1" }}>
-          Применить фильтры
+          ГЏГ°ГЁГ¬ГҐГ­ГЁГІГј ГґГЁГ«ГјГІГ°Г»
         </button>
         <button 
           className="btn-primary" 
           style={{ background: "#64748b" }}
           onClick={() => setFilters({ brand: "", hybrid: "", year: "", location: "" })}
         >
-          Сбросить
+          Г‘ГЎГ°Г®Г±ГЁГІГј
         </button>
       </div>
     </div>
@@ -661,7 +661,7 @@ export default function FiltersPanel() {
 export default function MapsSection({ fullPage = false }) {
   return (
     <div className={fullPage ? "" : "card"}>
-      <h3 style={{ marginBottom: "1rem", color: "#1e293b" }}>??? Карта испытаний</h3>
+      <h3 style={{ marginBottom: "1rem", color: "#1e293b" }}>??? ГЉГ Г°ГІГ  ГЁГ±ГЇГ»ГІГ Г­ГЁГ©</h3>
       <div style={{
         height: fullPage ? "600px" : "400px",
         background: "linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%)",
@@ -677,11 +677,11 @@ export default function MapsSection({ fullPage = false }) {
         <div style={{ fontSize: "3rem" }}>??</div>
         <div style={{ textAlign: "center" }}>
           <p style={{ fontSize: "1.2rem", fontWeight: "600", marginBottom: "0.5rem" }}>
-            Интерактивная карта
+            Г€Г­ГІГҐГ°Г ГЄГІГЁГўГ­Г Гї ГЄГ Г°ГІГ 
           </p>
-          <p>Интеграция с Leaflet и React-Leaflet</p>
+          <p>Г€Г­ГІГҐГЈГ°Г Г¶ГЁГї Г± Leaflet ГЁ React-Leaflet</p>
           <p style={{ fontSize: "0.9rem", opacity: 0.8, marginTop: "0.5rem" }}>
-            Показывает локации испытаний с данными урожайности
+            ГЏГ®ГЄГ Г§Г»ГўГ ГҐГІ Г«Г®ГЄГ Г¶ГЁГЁ ГЁГ±ГЇГ»ГІГ Г­ГЁГ© Г± Г¤Г Г­Г­Г»Г¬ГЁ ГіГ°Г®Г¦Г Г©Г­Г®Г±ГІГЁ
           </p>
         </div>
       </div>
@@ -694,7 +694,7 @@ export default function MapsSection({ fullPage = false }) {
 export default function AnalyticsSection({ data }) {
   return (
     <div className="card">
-      <h3 style={{ marginBottom: "1rem", color: "#1e293b" }}>?? Аналитика урожайности</h3>
+      <h3 style={{ marginBottom: "1rem", color: "#1e293b" }}>?? ГЂГ­Г Г«ГЁГІГЁГЄГ  ГіГ°Г®Г¦Г Г©Г­Г®Г±ГІГЁ</h3>
       <div style={{
         height: "400px",
         background: "linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)",
@@ -710,11 +710,11 @@ export default function AnalyticsSection({ data }) {
         <div style={{ fontSize: "3rem" }}>??</div>
         <div style={{ textAlign: "center" }}>
           <p style={{ fontSize: "1.2rem", fontWeight: "600", marginBottom: "0.5rem" }}>
-            Графики и диаграммы
+            ГѓГ°Г ГґГЁГЄГЁ ГЁ Г¤ГЁГ ГЈГ°Г Г¬Г¬Г»
           </p>
-          <p>Интеграция с Recharts</p>
+          <p>Г€Г­ГІГҐГЈГ°Г Г¶ГЁГї Г± Recharts</p>
           <p style={{ fontSize: "0.9rem", opacity: 0.8, marginTop: "0.5rem" }}>
-            Визуализация данных урожайности и масличности
+            Г‚ГЁГ§ГіГ Г«ГЁГ§Г Г¶ГЁГї Г¤Г Г­Г­Г»Гµ ГіГ°Г®Г¦Г Г©Г­Г®Г±ГІГЁ ГЁ Г¬Г Г±Г«ГЁГ·Г­Г®Г±ГІГЁ
           </p>
         </div>
       </div>
@@ -732,11 +732,11 @@ export default function AnalyticsSection({ data }) {
         return True
     
     def create_utils_and_data(self):
-        """Создает вспомогательные файлы и данные"""
+        """Г‘Г®Г§Г¤Г ГҐГІ ГўГ±ГЇГ®Г¬Г®ГЈГ ГІГҐГ«ГјГ­Г»ГҐ ГґГ Г©Г«Г» ГЁ Г¤Г Г­Г­Г»ГҐ"""
         print("??? Creating utilities and data files...")
         
         # utils/constants.js
-        constants_js = '''// Цветовая палитра RayAgro
+        constants_js = '''// Г–ГўГҐГІГ®ГўГ Гї ГЇГ Г«ГЁГІГ°Г  RayAgro
 export const RAYAGRO_COLORS = {
   primary: "#4C73C1",
   accent: "#F6C500", 
@@ -746,20 +746,20 @@ export const RAYAGRO_COLORS = {
   info: "#3B82F6"
 };
 
-// Настройки дашборда
+// ГЌГ Г±ГІГ°Г®Г©ГЄГЁ Г¤Г ГёГЎГ®Г°Г¤Г 
 export const DASHBOARD_CONFIG = {
   maxPointsOnMap: 1000,
   defaultYearRange: [2015, 2025],
   yieldThreshold: 30,
-  refreshInterval: 300000 // 5 минут
+  refreshInterval: 300000 // 5 Г¬ГЁГ­ГіГІ
 };
 
-// Бренды и их цвета
+// ГЃГ°ГҐГ­Г¤Г» ГЁ ГЁГµ Г¶ГўГҐГІГ 
 export const BRAND_COLORS = {
-  "Пионер": "#2563eb",
-  "Сингента": "#f59e0b",
-  "Лимагрен": "#10b981",
-  "КВС": "#ef4444",
+  "ГЏГЁГ®Г­ГҐГ°": "#2563eb",
+  "Г‘ГЁГ­ГЈГҐГ­ГІГ ": "#f59e0b",
+  "Г‹ГЁГ¬Г ГЈГ°ГҐГ­": "#10b981",
+  "ГЉГ‚Г‘": "#ef4444",
   "LG": "#8b5cf6"
 };'''
         
@@ -767,7 +767,7 @@ export const BRAND_COLORS = {
             f.write(constants_js)
         
         # utils/dataProcessing.js
-        data_processing_js = '''// Функции для обработки данных
+        data_processing_js = '''// Г”ГіГ­ГЄГ¶ГЁГЁ Г¤Г«Гї Г®ГЎГ°Г ГЎГ®ГІГЄГЁ Г¤Г Г­Г­Г»Гµ
 export const processYieldData = (data) => {
   return data.filter(item => item.yield > 0)
     .sort((a, b) => b.yield - a.yield);
@@ -797,11 +797,11 @@ export const groupByBrand = (data) => {
         with open("src/utils/dataProcessing.js", "w") as f:
             f.write(data_processing_js)
         
-        # Пример данных
+        # ГЏГ°ГЁГ¬ГҐГ° Г¤Г Г­Г­Г»Гµ
         sample_data = '''ID,Hybrid,Brand,Year,Yield,Oil,Location,Lat,Lon
-1,Подсолнечник-1,Сингента,2023,28.5,45.2,Локация A,52.5,31.5
-2,Кукуруза-1,Пионер,2023,85.3,,Локация B,53.0,32.0
-3,Подсолнечник-2,Лимагрен,2023,32.1,48.7,Локация C,52.7,31.7'''
+1,ГЏГ®Г¤Г±Г®Г«Г­ГҐГ·Г­ГЁГЄ-1,Г‘ГЁГ­ГЈГҐГ­ГІГ ,2023,28.5,45.2,Г‹Г®ГЄГ Г¶ГЁГї A,52.5,31.5
+2,ГЉГіГЄГіГ°ГіГ§Г -1,ГЏГЁГ®Г­ГҐГ°,2023,85.3,,Г‹Г®ГЄГ Г¶ГЁГї B,53.0,32.0
+3,ГЏГ®Г¤Г±Г®Г«Г­ГҐГ·Г­ГЁГЄ-2,Г‹ГЁГ¬Г ГЈГ°ГҐГ­,2023,32.1,48.7,Г‹Г®ГЄГ Г¶ГЁГї C,52.7,31.7'''
         
         with open("data/sample-data.csv", "w") as f:
             f.write(sample_data)
@@ -810,141 +810,141 @@ export const groupByBrand = (data) => {
         return True
     
     def create_documentation(self, issue_number):
-        """Создает документацию проекта"""
+        """Г‘Г®Г§Г¤Г ГҐГІ Г¤Г®ГЄГіГ¬ГҐГ­ГІГ Г¶ГЁГѕ ГЇГ°Г®ГҐГЄГІГ """
         print("?? Creating documentation...")
         
         readme_content = f'''# ?? RayAgro Yield Dashboard
 
-## Расширенный дашборд урожайности с аналитикой
+## ГђГ Г±ГёГЁГ°ГҐГ­Г­Г»Г© Г¤Г ГёГЎГ®Г°Г¤ ГіГ°Г®Г¦Г Г©Г­Г®Г±ГІГЁ Г± Г Г­Г Г«ГЁГІГЁГЄГ®Г©
 
-### Создан автоматически агентом
+### Г‘Г®Г§Г¤Г Г­ Г ГўГІГ®Г¬Г ГІГЁГ·ГҐГ±ГЄГЁ Г ГЈГҐГ­ГІГ®Г¬
 - **Issue**: #{issue_number}
-- **Дата создания**: {time.strftime('%Y-%m-%d %H:%M:%S')}
-- **Статус**: ?? Активная разработка
+- **Г„Г ГІГ  Г±Г®Г§Г¤Г Г­ГЁГї**: {time.strftime('%Y-%m-%d %H:%M:%S')}
+- **Г‘ГІГ ГІГіГ±**: ?? ГЂГЄГІГЁГўГ­Г Гї Г°Г Г§Г°Г ГЎГ®ГІГЄГ 
 
-## ?? Возможности
+## ?? Г‚Г®Г§Г¬Г®Г¦Г­Г®Г±ГІГЁ
 
-### ?? Визуализация данных
-- Интерактивные графики урожайности
-- Тепловые карты локаций испытаний
-- KPI показатели в реальном времени
+### ?? Г‚ГЁГ§ГіГ Г«ГЁГ§Г Г¶ГЁГї Г¤Г Г­Г­Г»Гµ
+- Г€Г­ГІГҐГ°Г ГЄГІГЁГўГ­Г»ГҐ ГЈГ°Г ГґГЁГЄГЁ ГіГ°Г®Г¦Г Г©Г­Г®Г±ГІГЁ
+- Г’ГҐГЇГ«Г®ГўГ»ГҐ ГЄГ Г°ГІГ» Г«Г®ГЄГ Г¶ГЁГ© ГЁГ±ГЇГ»ГІГ Г­ГЁГ©
+- KPI ГЇГ®ГЄГ Г§Г ГІГҐГ«ГЁ Гў Г°ГҐГ Г«ГјГ­Г®Г¬ ГўГ°ГҐГ¬ГҐГ­ГЁ
 
-### ??? Геоаналитика  
-- Карты испытаний с кластерами
-- Тепловые карты урожайности
-- Фильтрация по регионам
+### ??? ГѓГҐГ®Г Г­Г Г«ГЁГІГЁГЄГ   
+- ГЉГ Г°ГІГ» ГЁГ±ГЇГ»ГІГ Г­ГЁГ© Г± ГЄГ«Г Г±ГІГҐГ°Г Г¬ГЁ
+- Г’ГҐГЇГ«Г®ГўГ»ГҐ ГЄГ Г°ГІГ» ГіГ°Г®Г¦Г Г©Г­Г®Г±ГІГЁ
+- Г”ГЁГ«ГјГІГ°Г Г¶ГЁГї ГЇГ® Г°ГҐГЈГЁГ®Г­Г Г¬
 
-### ?? Аналитика
-- Сравнение гибридов и брендов
-- Статистический анализ
-- Тренды и прогнозы
+### ?? ГЂГ­Г Г«ГЁГІГЁГЄГ 
+- Г‘Г°Г ГўГ­ГҐГ­ГЁГҐ ГЈГЁГЎГ°ГЁГ¤Г®Гў ГЁ ГЎГ°ГҐГ­Г¤Г®Гў
+- Г‘ГІГ ГІГЁГ±ГІГЁГ·ГҐГ±ГЄГЁГ© Г Г­Г Г«ГЁГ§
+- Г’Г°ГҐГ­Г¤Г» ГЁ ГЇГ°Г®ГЈГ­Г®Г§Г»
 
-### ?? Интерфейс
-- Адаптивный дизайн
-- Вкладки для разных разделов
-- Фильтры и настройки
+### ?? Г€Г­ГІГҐГ°ГґГҐГ©Г±
+- ГЂГ¤Г ГЇГІГЁГўГ­Г»Г© Г¤ГЁГ§Г Г©Г­
+- Г‚ГЄГ«Г Г¤ГЄГЁ Г¤Г«Гї Г°Г Г§Г­Г»Гµ Г°Г Г§Г¤ГҐГ«Г®Гў
+- Г”ГЁГ«ГјГІГ°Г» ГЁ Г­Г Г±ГІГ°Г®Г©ГЄГЁ
 
-## ??? Технологии
+## ??? Г’ГҐГµГ­Г®Г«Г®ГЈГЁГЁ
 
 - **Frontend**: React 18, Vite
-- **Графики**: Recharts
-- **Карты**: Leaflet, React-Leaflet
-- **Стили**: CSS3, Flexbox/Grid
+- **ГѓГ°Г ГґГЁГЄГЁ**: Recharts
+- **ГЉГ Г°ГІГ»**: Leaflet, React-Leaflet
+- **Г‘ГІГЁГ«ГЁ**: CSS3, Flexbox/Grid
 
-## ?? Установка и запуск
+## ?? Г“Г±ГІГ Г­Г®ГўГЄГ  ГЁ Г§Г ГЇГіГ±ГЄ
 
 \\`\\`\\`bash
-# Установка зависимостей
+# Г“Г±ГІГ Г­Г®ГўГЄГ  Г§Г ГўГЁГ±ГЁГ¬Г®Г±ГІГҐГ©
 npm install
 
-# Запуск в режиме разработки
+# Г‡Г ГЇГіГ±ГЄ Гў Г°ГҐГ¦ГЁГ¬ГҐ Г°Г Г§Г°Г ГЎГ®ГІГЄГЁ
 npm run dev
 
-# Сборка для production
+# Г‘ГЎГ®Г°ГЄГ  Г¤Г«Гї production
 npm run build
 \\`\\`\\`
 
-## ??? Структура проекта
+## ??? Г‘ГІГ°ГіГЄГІГіГ°Г  ГЇГ°Г®ГҐГЄГІГ 
 
 \\`\\`\\`
 src/
-+-- components/     # React компоненты
-¦   +-- Dashboard.jsx      # Главный компонент
-¦   +-- KPISection.jsx     # KPI показатели
-¦   +-- FiltersPanel.jsx   # Панель фильтров
-¦   +-- MapsSection.jsx    # Раздел карт
-¦   L-- AnalyticsSection.jsx # Аналитика
-+-- utils/          # Вспомогательные функции
-¦   +-- constants.js       # Константы и настройки
-¦   L-- dataProcessing.js  # Обработка данных
-+-- styles/         # Стили
-¦   L-- index.css   # Основные стили
-+-- App.jsx         # Главный компонент приложения
-L-- main.jsx        # Точка входа
++-- components/     # React ГЄГ®Г¬ГЇГ®Г­ГҐГ­ГІГ»
+В¦   +-- Dashboard.jsx      # ГѓГ«Г ГўГ­Г»Г© ГЄГ®Г¬ГЇГ®Г­ГҐГ­ГІ
+В¦   +-- KPISection.jsx     # KPI ГЇГ®ГЄГ Г§Г ГІГҐГ«ГЁ
+В¦   +-- FiltersPanel.jsx   # ГЏГ Г­ГҐГ«Гј ГґГЁГ«ГјГІГ°Г®Гў
+В¦   +-- MapsSection.jsx    # ГђГ Г§Г¤ГҐГ« ГЄГ Г°ГІ
+В¦   L-- AnalyticsSection.jsx # ГЂГ­Г Г«ГЁГІГЁГЄГ 
++-- utils/          # Г‚Г±ГЇГ®Г¬Г®ГЈГ ГІГҐГ«ГјГ­Г»ГҐ ГґГіГ­ГЄГ¶ГЁГЁ
+В¦   +-- constants.js       # ГЉГ®Г­Г±ГІГ Г­ГІГ» ГЁ Г­Г Г±ГІГ°Г®Г©ГЄГЁ
+В¦   L-- dataProcessing.js  # ГЋГЎГ°Г ГЎГ®ГІГЄГ  Г¤Г Г­Г­Г»Гµ
++-- styles/         # Г‘ГІГЁГ«ГЁ
+В¦   L-- index.css   # ГЋГ±Г­Г®ГўГ­Г»ГҐ Г±ГІГЁГ«ГЁ
++-- App.jsx         # ГѓГ«Г ГўГ­Г»Г© ГЄГ®Г¬ГЇГ®Г­ГҐГ­ГІ ГЇГ°ГЁГ«Г®Г¦ГҐГ­ГЁГї
+L-- main.jsx        # Г’Г®Г·ГЄГ  ГўГµГ®Г¤Г 
 \\`\\`\\`
 
-## ?? Разработка
+## ?? ГђГ Г§Г°Г ГЎГ®ГІГЄГ 
 
-Дашборд создан как основа для дальнейшего развития. 
-Агент может постепенно добавлять новый функционал через Issues.
+Г„Г ГёГЎГ®Г°Г¤ Г±Г®Г§Г¤Г Г­ ГЄГ ГЄ Г®Г±Г­Г®ГўГ  Г¤Г«Гї Г¤Г Г«ГјГ­ГҐГ©ГёГҐГЈГ® Г°Г Г§ГўГЁГІГЁГї. 
+ГЂГЈГҐГ­ГІ Г¬Г®Г¦ГҐГІ ГЇГ®Г±ГІГҐГЇГҐГ­Г­Г® Г¤Г®ГЎГ ГўГ«ГїГІГј Г­Г®ГўГ»Г© ГґГіГ­ГЄГ¶ГЁГ®Г­Г Г« Г·ГҐГ°ГҐГ§ Issues.
 
-## ?? Контакты
+## ?? ГЉГ®Г­ГІГ ГЄГІГ»
 
-- **Репозиторий**: https://github.com/ostrovde/dashboard-new
-- **Автоматизация**: GitHub Actions + Python Agent
+- **ГђГҐГЇГ®Г§ГЁГІГ®Г°ГЁГ©**: https://github.com/ostrovde/dashboard-new
+- **ГЂГўГІГ®Г¬Г ГІГЁГ§Г Г¶ГЁГї**: GitHub Actions + Python Agent
 
 ---
 
-*Создано с помощью автономного агента разработки* ??
+*Г‘Г®Г§Г¤Г Г­Г® Г± ГЇГ®Г¬Г®Г№ГјГѕ Г ГўГІГ®Г­Г®Г¬Г­Г®ГЈГ® Г ГЈГҐГ­ГІГ  Г°Г Г§Г°Г ГЎГ®ГІГЄГЁ* ??
 '''
         
         with open("README.md", "w", encoding='utf-8') as f:
             f.write(readme_content)
         
-        # Файл с планом развития
-        roadmap_content = f'''# ??? План развития дашборда
+        # Г”Г Г©Г« Г± ГЇГ«Г Г­Г®Г¬ Г°Г Г§ГўГЁГІГЁГї
+        roadmap_content = f'''# ??? ГЏГ«Г Г­ Г°Г Г§ГўГЁГІГЁГї Г¤Г ГёГЎГ®Г°Г¤Г 
 
-## Создано: {time.strftime('%Y-%m-%d %H:%M:%S')}
+## Г‘Г®Г§Г¤Г Г­Г®: {time.strftime('%Y-%m-%d %H:%M:%S')}
 ## Issue: #{issue_number}
 
-## ? Выполнено
-- [x] Базовая структура React проекта
-- [x] Компонентная архитектура
-- [x] Система вкладок
-- [x] KPI показатели
-- [x] Панель фильтров
-- [x] Адаптивный дизайн
-- [x] Интеграция зависимостей (Recharts, Leaflet)
+## ? Г‚Г»ГЇГ®Г«Г­ГҐГ­Г®
+- [x] ГЃГ Г§Г®ГўГ Гї Г±ГІГ°ГіГЄГІГіГ°Г  React ГЇГ°Г®ГҐГЄГІГ 
+- [x] ГЉГ®Г¬ГЇГ®Г­ГҐГ­ГІГ­Г Гї Г Г°ГµГЁГІГҐГЄГІГіГ°Г 
+- [x] Г‘ГЁГ±ГІГҐГ¬Г  ГўГЄГ«Г Г¤Г®ГЄ
+- [x] KPI ГЇГ®ГЄГ Г§Г ГІГҐГ«ГЁ
+- [x] ГЏГ Г­ГҐГ«Гј ГґГЁГ«ГјГІГ°Г®Гў
+- [x] ГЂГ¤Г ГЇГІГЁГўГ­Г»Г© Г¤ГЁГ§Г Г©Г­
+- [x] Г€Г­ГІГҐГЈГ°Г Г¶ГЁГї Г§Г ГўГЁГ±ГЁГ¬Г®Г±ГІГҐГ© (Recharts, Leaflet)
 
-## ?? В разработке
-- [ ] Интеграция реальных данных
-- [ ] Интерактивные карты Leaflet
-- [ ] Графики Recharts
-- [ ] Фильтрация данных
-- [ ] Экспорт отчетов
+## ?? Г‚ Г°Г Г§Г°Г ГЎГ®ГІГЄГҐ
+- [ ] Г€Г­ГІГҐГЈГ°Г Г¶ГЁГї Г°ГҐГ Г«ГјГ­Г»Гµ Г¤Г Г­Г­Г»Гµ
+- [ ] Г€Г­ГІГҐГ°Г ГЄГІГЁГўГ­Г»ГҐ ГЄГ Г°ГІГ» Leaflet
+- [ ] ГѓГ°Г ГґГЁГЄГЁ Recharts
+- [ ] Г”ГЁГ«ГјГІГ°Г Г¶ГЁГї Г¤Г Г­Г­Г»Гµ
+- [ ] ГќГЄГ±ГЇГ®Г°ГІ Г®ГІГ·ГҐГІГ®Гў
 
-## ?? Планы на будущее
+## ?? ГЏГ«Г Г­Г» Г­Г  ГЎГіГ¤ГіГ№ГҐГҐ
 
-### Ближайшие задачи
-1. **Интеграция карт** - добавить Leaflet компоненты
-2. **Графики** - внедрить Recharts для визуализации
-3. **Загрузка данных** - подключить CSV/API
-4. **Расширенные фильтры** - добавить больше параметров
+### ГЃГ«ГЁГ¦Г Г©ГёГЁГҐ Г§Г Г¤Г Г·ГЁ
+1. **Г€Г­ГІГҐГЈГ°Г Г¶ГЁГї ГЄГ Г°ГІ** - Г¤Г®ГЎГ ГўГЁГІГј Leaflet ГЄГ®Г¬ГЇГ®Г­ГҐГ­ГІГ»
+2. **ГѓГ°Г ГґГЁГЄГЁ** - ГўГ­ГҐГ¤Г°ГЁГІГј Recharts Г¤Г«Гї ГўГЁГ§ГіГ Г«ГЁГ§Г Г¶ГЁГЁ
+3. **Г‡Г ГЈГ°ГіГ§ГЄГ  Г¤Г Г­Г­Г»Гµ** - ГЇГ®Г¤ГЄГ«ГѕГ·ГЁГІГј CSV/API
+4. **ГђГ Г±ГёГЁГ°ГҐГ­Г­Г»ГҐ ГґГЁГ«ГјГІГ°Г»** - Г¤Г®ГЎГ ГўГЁГІГј ГЎГ®Г«ГјГёГҐ ГЇГ Г°Г Г¬ГҐГІГ°Г®Гў
 
-### Долгосрочные цели
-- Machine learning прогнозы
-- Real-time обновления
-- Мобильное приложение
-- Интеграция с Google Sheets
+### Г„Г®Г«ГЈГ®Г±Г°Г®Г·Г­Г»ГҐ Г¶ГҐГ«ГЁ
+- Machine learning ГЇГ°Г®ГЈГ­Г®Г§Г»
+- Real-time Г®ГЎГ­Г®ГўГ«ГҐГ­ГЁГї
+- ГЊГ®ГЎГЁГ«ГјГ­Г®ГҐ ГЇГ°ГЁГ«Г®Г¦ГҐГ­ГЁГҐ
+- Г€Г­ГІГҐГЈГ°Г Г¶ГЁГї Г± Google Sheets
 
-## ?? Приоритеты
+## ?? ГЏГ°ГЁГ®Г°ГЁГІГҐГІГ»
 
-1. **Высокий**: Функциональные карты и графики
-2. **Средний**: Расширенная аналитика
-3. **Низкий**: Дополнительные визуализации
+1. **Г‚Г»Г±Г®ГЄГЁГ©**: Г”ГіГ­ГЄГ¶ГЁГ®Г­Г Г«ГјГ­Г»ГҐ ГЄГ Г°ГІГ» ГЁ ГЈГ°Г ГґГЁГЄГЁ
+2. **Г‘Г°ГҐГ¤Г­ГЁГ©**: ГђГ Г±ГёГЁГ°ГҐГ­Г­Г Гї Г Г­Г Г«ГЁГІГЁГЄГ 
+3. **ГЌГЁГ§ГЄГЁГ©**: Г„Г®ГЇГ®Г«Г­ГЁГІГҐГ«ГјГ­Г»ГҐ ГўГЁГ§ГіГ Г«ГЁГ§Г Г¶ГЁГЁ
 
 ---
-*План будет обновляться по мере развития проекта*
+*ГЏГ«Г Г­ ГЎГіГ¤ГҐГІ Г®ГЎГ­Г®ГўГ«ГїГІГјГ±Гї ГЇГ® Г¬ГҐГ°ГҐ Г°Г Г§ГўГЁГІГЁГї ГЇГ°Г®ГҐГЄГІГ *
 '''
         
         with open("ROADMAP.md", "w", encoding='utf-8') as f:
@@ -954,26 +954,26 @@ L-- main.jsx        # Точка входа
         return True
     
     def create_advanced_dashboard(self, issue_number):
-        """Основная функция создания улучшенного дашборда"""
+        """ГЋГ±Г­Г®ГўГ­Г Гї ГґГіГ­ГЄГ¶ГЁГї Г±Г®Г§Г¤Г Г­ГЁГї ГіГ«ГіГ·ГёГҐГ­Г­Г®ГЈГ® Г¤Г ГёГЎГ®Г°Г¤Г """
         print("?? Starting advanced dashboard creation...")
         
         try:
-            # 1. Создаем структуру проекта
+            # 1. Г‘Г®Г§Г¤Г ГҐГ¬ Г±ГІГ°ГіГЄГІГіГ°Гі ГЇГ°Г®ГҐГЄГІГ 
             self.create_project_structure()
             
-            # 2. Настраиваем package.json
+            # 2. ГЌГ Г±ГІГ°Г ГЁГўГ ГҐГ¬ package.json
             self.create_package_json()
             
-            # 3. Создаем основные файлы
+            # 3. Г‘Г®Г§Г¤Г ГҐГ¬ Г®Г±Г­Г®ГўГ­Г»ГҐ ГґГ Г©Г«Г»
             self.create_main_files(issue_number)
             
-            # 4. Создаем React компоненты
+            # 4. Г‘Г®Г§Г¤Г ГҐГ¬ React ГЄГ®Г¬ГЇГ®Г­ГҐГ­ГІГ»
             self.create_react_components(issue_number)
             
-            # 5. Создаем утилиты и данные
+            # 5. Г‘Г®Г§Г¤Г ГҐГ¬ ГіГІГЁГ«ГЁГІГ» ГЁ Г¤Г Г­Г­Г»ГҐ
             self.create_utils_and_data()
             
-            # 6. Создаем документацию
+            # 6. Г‘Г®Г§Г¤Г ГҐГ¬ Г¤Г®ГЄГіГ¬ГҐГ­ГІГ Г¶ГЁГѕ
             self.create_documentation(issue_number)
             
             print("?? Advanced dashboard created successfully!")
@@ -987,22 +987,22 @@ L-- main.jsx        # Точка входа
         print(f"?? Agent started for issue #{issue_number}")
         print(f"?? Repository: {self.repo}")
         
-        # Создаем ветку
+        # Г‘Г®Г§Г¤Г ГҐГ¬ ГўГҐГІГЄГі
         branch_name = f"feat/{issue_number}-advanced-dashboard"
         
-        # Переходим в workdir если есть
+        # ГЏГҐГ°ГҐГµГ®Г¤ГЁГ¬ Гў workdir ГҐГ±Г«ГЁ ГҐГ±ГІГј
         if os.path.exists("workdir"):
             os.chdir("workdir")
             print("?? Working in workdir/")
         else:
             print("?? Working in current directory")
         
-        # Создаем ветку
+        # Г‘Г®Г§Г¤Г ГҐГ¬ ГўГҐГІГЄГі
         subprocess.run(["git", "checkout", "-b", branch_name], check=True)
         print(f"?? Created branch: {branch_name}")
         
         # =============================================
-        # СОЗДАЕМ УЛУЧШЕННЫЙ ДАШБОРД
+        # Г‘ГЋГ‡Г„ГЂГ…ГЊ Г“Г‹Г“Г—ГГ…ГЌГЌГ›Г‰ Г„ГЂГГЃГЋГђГ„
         # =============================================
         
         print("??? Building advanced dashboard structure...")
@@ -1014,22 +1014,22 @@ L-- main.jsx        # Точка входа
             return "Dashboard creation failed"
         
         # =============================================
-        # КОММИТ И ПУШ
+        # ГЉГЋГЊГЊГ€Г’ Г€ ГЏГ“Г
         # =============================================
             
-        # Добавляем все изменения
+        # Г„Г®ГЎГ ГўГ«ГїГҐГ¬ ГўГ±ГҐ ГЁГ§Г¬ГҐГ­ГҐГ­ГЁГї
         subprocess.run(["git", "add", "."], check=True)
         
-        # Коммитим
+        # ГЉГ®Г¬Г¬ГЁГІГЁГ¬
         commit_message = f"feat: create advanced dashboard structure for #{issue_number}"
         subprocess.run(["git", "commit", "-m", commit_message], check=True)
         print("?? Changes committed")
         
-        # Пушим
+        # ГЏГіГёГЁГ¬
         subprocess.run(["git", "push", "-u", "origin", branch_name], check=True)
         print("?? Changes pushed to GitHub")
         
-        # Создаем PR
+        # Г‘Г®Г§Г¤Г ГҐГ¬ PR
         try:
             pr_result = self.create_pr(issue_number, branch_name)
             pr_url = pr_result.get('html_url', 'URL not available')
