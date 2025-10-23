@@ -1,3 +1,52 @@
+# --- BEGIN: CI-safe remotes & push wrappers ----------------------------------
+set -euo pipefail
+
+infer_nwo() {
+  # Источник №1: из среды Actions
+  if [ -n "${GITHUB_REPOSITORY:-}" ] && printf '%s' "$GITHUB_REPOSITORY" | grep -q '/'; then
+    echo "$GITHUB_REPOSITORY"; return 0
+  fi
+  # Источник №2: парсим текущий origin
+  local url
+  url="$(git remote get-url origin 2>/dev/null || true)"
+  case "$url" in
+    https://github.com/*) echo "${url#https://github.com/}" | sed 's/\.git$//'; return 0 ;;
+    git@github.com:*)     echo "${url#git@github.com:}"  | sed 's/\.git$//'; return 0 ;;
+  esac
+  # Источник №3: переменная REPO, если выглядит как owner/repo
+  if [ -n "${REPO:-}" ] && printf '%s' "$REPO" | grep -q '/'; then
+    echo "$REPO"; return 0
+  fi
+  return 1
+}
+
+fix_origin() {
+  local nwo
+  if ! nwo="$(infer_nwo)"; then
+    echo "[bootstrap] FATAL: cannot infer owner/repo" >&2
+    echo "  REPO='$REPO'  GITHUB_REPOSITORY='${GITHUB_REPOSITORY:-}'" >&2
+    echo "  remotes:" >&2
+    git remote -v || true
+    exit 1
+  fi
+
+  if [ -n "${GITHUB_ACTIONS:-}" ] && [ -n "${GITHUB_TOKEN:-}" ]; then
+    echo "::add-mask::$GITHUB_TOKEN"
+    git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${nwo}.git"
+  else
+    git remote set-url origin "https://github.com/${nwo}.git"
+  fi
+
+  echo "[bootstrap] origin fixed -> $(git remote get-url origin)" >&2
+}
+
+safe_push() {
+  fix_origin
+  # прокидываем все аргументы push как есть (например: -u origin BRANCH)
+  echo "[bootstrap] pushing: git push $*" >&2
+  safe_push "$@"
+}
+# --- END: CI-safe remotes & push wrappers ------------------------------------
 #!/usr/bin/env bash
 # --- FORCE origin to correct repo URL (early) ---
 REPO_EFFECTIVE="${2:-${REPO:-$GITHUB_REPOSITORY}}"
@@ -90,6 +139,7 @@ fix_origin(){
 
 push_with_token(){
   fix_origin
+  fix_origin
   local BR="${1:-${NEW_BRANCH:-$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)}}"
   if [ -n "${GITHUB_ACTIONS:-}" ] && [ -n "${GITHUB_TOKEN:-}" ]; then
     echo "::add-mask::$GITHUB_TOKEN"
@@ -111,6 +161,7 @@ esac
 
 # --- safe push helper (uses REPO_EFFECTIVE) ---
 push_with_token(){
+  fix_origin
   fix_origin
   local BR="${1:-${NEW_BRANCH:-$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)}}"
   if [ -n "${GITHUB_ACTIONS:-}" ] && [ -n "${GITHUB_TOKEN:-}" ]; then
@@ -143,6 +194,7 @@ repo_effective(){
 }
 
 push_with_token(){
+  fix_origin
   fix_origin
 
   local BR="${NEW_BRANCH:-$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo)}"
