@@ -1,4 +1,24 @@
 #!/usr/bin/env bash
+# --- helpers (auto) ---
+log(){ printf "[bootstrap] %s\n" "$*" >&2; }
+warn(){ printf "[bootstrap][WARN] %s\n" "$*" >&2; }
+repo_effective(){
+  # 1) позиционный аргумент $2 > 2) REPO > 3) GITHUB_REPOSITORY
+  local r="${2:-${REPO:-$GITHUB_REPOSITORY}}"
+  printf "%s" "$r"
+}
+push_with_token(){
+  local BR="${NEW_BRANCH:-$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo)}"
+  local NWO="$(repo_effective "$@")"
+  [ -n "$BR" ] || { warn "Пустое имя ветки"; return 1; }
+  if [ -n "$GITHUB_ACTIONS" ] && [ -n "$GITHUB_TOKEN" ] && [ -n "$NWO" ]; then
+    echo "::add-mask::$GITHUB_TOKEN"
+    git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${NWO}.git"
+  fi
+  log "Пушим ветку: ${BR} → origin"
+  git push -u origin "$BR"
+}
+# --- helpers (auto) ---
 set -euo pipefail
 if [[ -z "${GITHUB_TOKEN:-}" ]]; then echo "ERROR: GITHUB_TOKEN is not set." >&2; exit 1; fi
 if ! command -v gh >/dev/null 2>&1; then echo "ERROR: gh not installed." >&2; exit 1; fi
@@ -73,3 +93,4 @@ echo "::add-mask::$GITHUB_TOKEN"
 fi
 
 echo "NEXT: follow agent_spec.yaml workflow"
+
