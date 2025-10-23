@@ -42,6 +42,13 @@ if ! git config user.email >/dev/null 2>&1; then
 fi
 
   git commit --allow-empty -m "chore(ci): bootstrap branch for #${ISSUE_ID}"
+  : # ensure git identity in current repo (workdir)
+  if ! git config user.name >/dev/null 2>&1; then
+    git config user.name "${GITHUB_ACTOR:-github-actions[bot]}"
+  fi
+  if ! git config user.email >/dev/null 2>&1; then
+    git config user.email "${GIT_AUTHOR_EMAIL:-41898282+github-actions[bot]@users.noreply.github.com}"
+  fi
   git push -u origin HEAD
 fi
 
