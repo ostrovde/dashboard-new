@@ -1,4 +1,34 @@
 #!/usr/bin/env bash
+# --- begin: FORCE origin to correct repo URL ---
+# Определяем owner/repo (NWO) надёжно и один раз
+REPO_EFFECTIVE="${2:-${REPO:-$GITHUB_REPOSITORY}}"
+case "$REPO_EFFECTIVE" in
+  ""|origin) echo "[bootstrap] Bad REPO_EFFECTIVE='$REPO_EFFECTIVE'" >&2; exit 1;;
+  */*) ;; # ok
+  *) echo "[bootstrap] REPO_EFFECTIVE must look like owner/repo, got '$REPO_EFFECTIVE'"; exit 1;;
+esac
+
+# Без условий: ставим корректный origin прямо сейчас.
+if [ -n "$GITHUB_ACTIONS" ] && [ -n "$GITHUB_TOKEN" ]; then
+  echo "::add-mask::$GITHUB_TOKEN"
+  git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO_EFFECTIVE}.git"
+else
+  git remote set-url origin "https://github.com/${REPO_EFFECTIVE}.git"
+fi
+
+# Упрощённый помощник: перед любым push всегда переставляем origin ещё раз.
+fix_origin(){ 
+  if [ -n "$GITHUB_ACTIONS" ] && [ -n "$GITHUB_TOKEN" ]; then
+    git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO_EFFECTIVE}.git"
+  else
+    git remote set-url origin "https://github.com/${REPO_EFFECTIVE}.git"
+  fi
+  # Для наглядности в логах:
+  echo "[bootstrap] origin now -> $(git remote get-url origin)" >&2
+}
+# Немедленно починим origin в самом начале выполнения скрипта:
+fix_origin
+# --- end: FORCE origin to correct repo URL ---
 # --- begin: robust origin fixer ---
 fix_origin(){
   # Определяем NWO (owner/repo). Берём уже вычисленный REPO_EFFECTIVE, иначе REPO, иначе GITHUB_REPOSITORY
