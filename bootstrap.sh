@@ -1,4 +1,28 @@
 #!/usr/bin/env bash
+set -euo pipefail
+
+# --- stable repo detection ---
+REPO_EFFECTIVE="${2:-${REPO:-$GITHUB_REPOSITORY}}"
+case "$REPO_EFFECTIVE" in
+  */*) ;;
+  ""|origin) echo "[bootstrap] Bad REPO_EFFECTIVE=\"$REPO_EFFECTIVE\"" >&2; exit 1;;
+esac
+
+# --- safe push helper (uses REPO_EFFECTIVE) ---
+push_with_token(){
+  local BR="${1:-${NEW_BRANCH:-$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)}}"
+  if [ -n "${GITHUB_ACTIONS:-}" ] && [ -n "${GITHUB_TOKEN:-}" ]; then
+    echo "::add-mask::$GITHUB_TOKEN"
+    git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO_EFFECTIVE}.git"
+  fi
+  # если origin внезапно стал https://github.com/origin.git — починим
+  if git remote get-url origin 2>/dev/null | grep -q "/origin\.git$"; then
+    git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO_EFFECTIVE}.git"
+  fi
+  printf "[bootstrap] Пушим ветку: %s → origin\n" "$BR" >&2
+  git remote -v >&2
+  git push -u origin "$BR"
+}
 
 # --- helpers (auto) ---
 
