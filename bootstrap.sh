@@ -51,6 +51,9 @@ fi
   fi
   git push -u origin HEAD
 echo "::add-mask::$GITHUB_TOKEN"
+REPO="${2:-${REPO:-$GITHUB_REPOSITORY}}"
+git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git"
+echo "::add-mask::$GITHUB_TOKEN"
 git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git"
 fi
 
