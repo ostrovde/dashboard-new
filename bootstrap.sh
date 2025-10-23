@@ -49,12 +49,27 @@ fi
   if ! git config user.email >/dev/null 2>&1; then
     git config user.email "${GIT_AUTHOR_EMAIL:-41898282+github-actions[bot]@users.noreply.github.com}"
   fi
+# --- CI auth for pushes ---
+
+if [ -n "$GITHUB_ACTIONS" ]; then
+
+  echo "::add-mask::$GITHUB_TOKEN"
+
+  REPO_EFFECTIVE="${2:-${REPO:-$GITHUB_REPOSITORY}}"
+
+  if [ -z "$REPO_EFFECTIVE" ]; then echo "REPO_EFFECTIVE empty; cannot configure remote" >&2; exit 1; fi
+
+  git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO_EFFECTIVE}.git"
+
+  echo "[debug] remotes after set-url:"; git remote -v
+
+fi
+
+# --- end CI auth for pushes ---
   git push -u origin HEAD
 echo "::add-mask::$GITHUB_TOKEN"
 REPO="${2:-${REPO:-$GITHUB_REPOSITORY}}"
-git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git"
 echo "::add-mask::$GITHUB_TOKEN"
-git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${REPO}.git"
 fi
 
 echo "NEXT: follow agent_spec.yaml workflow"
