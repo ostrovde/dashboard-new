@@ -1,5 +1,4 @@
 import React from "react";
-import "leaflet/dist/leaflet.css";
 import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
 
 function colorByYield(y) {
